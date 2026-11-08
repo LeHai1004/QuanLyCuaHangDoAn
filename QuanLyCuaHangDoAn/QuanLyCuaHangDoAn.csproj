@@ -50,6 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Class\FileXml.cs" />
+    <Compile Include="Class\GiaoDien.cs" />
     <Compile Include="Class\KhoKhachHang.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
@@ -68,7 +69,6 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <None Include="Class\.gitkeep" />
     <None Include="Data\.gitkeep" />
     <None Include="GUI\.gitkeep" />
     <None Include="Properties\Settings.settings">
