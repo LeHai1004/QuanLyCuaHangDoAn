@@ -48,5 +48,42 @@ namespace QuanLyCuaHangDoAn.Class
                 }
             }
         }
+        // Trả về null nếu đổi thành công, ngược lại trả về nội dung lỗi
+        public static string DoiMatKhau(string maNV, string matKhauCu, string matKhauMoi)
+        {
+            string chuoiNoi = ConfigurationManager.ConnectionStrings["QLCuaHangDoAn"].ConnectionString;
+            using (SqlConnection conn = new SqlConnection(chuoiNoi))
+            {
+                conn.Open();
+                string tenDN;
+                string bamCu;
+                using (SqlCommand cmd = new SqlCommand("SELECT TenDN, MatKhau FROM NhanVien WHERE MaNV = @ma", conn))
+                {
+                    cmd.Parameters.Add("@ma", SqlDbType.NVarChar, 10).Value = maNV;
+                    using (SqlDataReader rd = cmd.ExecuteReader())
+                    {
+                        if (!rd.Read())
+                        {
+                            return "Không tìm thấy tài khoản.";
+                        }
+                        tenDN = rd.GetString(0);
+                        bamCu = rd.GetString(1);
+                    }
+                }
+
+                if (bamCu != BamMatKhau(tenDN, matKhauCu))
+                {
+                    return "Mật khẩu hiện tại không đúng.";
+                }
+
+                using (SqlCommand cmd = new SqlCommand("UPDATE NhanVien SET MatKhau = @mk WHERE MaNV = @ma", conn))
+                {
+                    cmd.Parameters.Add("@mk", SqlDbType.VarChar, 64).Value = BamMatKhau(tenDN, matKhauMoi);
+                    cmd.Parameters.Add("@ma", SqlDbType.NVarChar, 10).Value = maNV;
+                    cmd.ExecuteNonQuery();
+                }
+                return null;
+            }
+        }
     }
 }

@@ -144,6 +144,22 @@ namespace QuanLyCuaHangDoAn.GUI
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
+            if (muc.Text == "Đổi mật khẩu")
+            {
+                using (frmDoiMatKhau f = new frmDoiMatKhau())
+                {
+                    f.ShowDialog(this);
+                }
+                return;
+            }
+            if (muc.Text == "Nhân viên")
+            {
+                using (frmNhanVien f = new frmNhanVien())
+                {
+                    f.ShowDialog(this);
+                }
+                return;
+            }
             MessageBox.Show("Chức năng \"" + muc.Text + "\" đang được phát triển.", "Thông báo",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
