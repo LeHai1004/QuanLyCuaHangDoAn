@@ -5,7 +5,7 @@ Mỗi người tự cập nhật task của mình. Trạng thái: Chưa bắt đ
 | Task | Người | Trạng thái | Nhánh | PR | Ghi chú |
 |---|---|---|---|---|---|
 | T1 | Hải | Xong | develop | - | Đã xong FileXml, GiaoDien, script CSDL, CapNhatDb đã thử với DB thật. Còn bộ docs (đang làm) |
-| T2 | Hải | Chưa bắt đầu | - | - | Chờ T1 |
+| T2 | Hải | Chưa bắt đầu | - | - | T2 | Hải | Xong | feature/hai-dangnhap | #1 | Đăng nhập, phân quyền, nhân viên, đổi mật khẩu. Rồi: |
 | T3 | Quốc | Chưa bắt đầu | - | - | Chờ T1 |
 | T4 | Quốc | Chưa bắt đầu | - | - | Chờ T1 |
 | T5 | Quốc | Chưa bắt đầu | - | - | Chờ T2, T3, T4 |
