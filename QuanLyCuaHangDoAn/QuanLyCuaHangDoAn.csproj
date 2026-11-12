@@ -52,11 +52,25 @@
     <Compile Include="Class\FileXml.cs" />
     <Compile Include="Class\GiaoDien.cs" />
     <Compile Include="Class\KhoKhachHang.cs" />
+    <Compile Include="Class\PhienDangNhap.cs" />
+    <Compile Include="Class\TaiKhoan.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
+    </Compile>
+    <Compile Include="GUI\frmDangNhap.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="GUI\frmDangNhap.Designer.cs">
+      <DependentUpon>frmDangNhap.cs</DependentUpon>
+    </Compile>
+    <Compile Include="GUI\frmMain.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="GUI\frmMain.Designer.cs">
+      <DependentUpon>frmMain.cs</DependentUpon>
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -70,7 +84,6 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <None Include="Data\.gitkeep" />
-    <None Include="GUI\.gitkeep" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>

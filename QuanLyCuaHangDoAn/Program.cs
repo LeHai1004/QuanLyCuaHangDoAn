@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows.Forms;
+using QuanLyCuaHangDoAn.GUI;
 
 namespace QuanLyCuaHangDoAn
 {
@@ -16,7 +14,27 @@ namespace QuanLyCuaHangDoAn
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());
+
+            // Đăng nhập -> vào frmMain; bấm Đăng xuất thì quay lại đăng nhập
+            while (true)
+            {
+                using (frmDangNhap dangNhap = new frmDangNhap())
+                {
+                    if (dangNhap.ShowDialog() != DialogResult.OK)
+                    {
+                        break;
+                    }
+                }
+
+                using (frmMain chinh = new frmMain())
+                {
+                    Application.Run(chinh);
+                    if (!chinh.DangXuat)
+                    {
+                        break;
+                    }
+                }
+            }
         }
     }
 }
