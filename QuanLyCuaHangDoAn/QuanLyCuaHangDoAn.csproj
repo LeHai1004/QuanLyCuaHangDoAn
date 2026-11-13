@@ -58,6 +58,9 @@
     <Compile Include="GUI\frmMonAn.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="GUI\frmOrder.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Class\PhienDangNhap.cs" />
     <Compile Include="Class\TaiKhoan.cs" />
     <Compile Include="Form1.cs">

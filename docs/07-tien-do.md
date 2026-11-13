@@ -8,7 +8,7 @@ Mỗi người tự cập nhật task của mình. Trạng thái: Chưa bắt đ
 | T2 | Hải | Chưa bắt đầu | - | - | T2 | Hải | Xong | feature/hai-dangnhap | #1 | Đăng nhập, phân quyền, nhân viên, đổi mật khẩu. Rồi: |
 | T3 | Quốc | Chưa bắt đầu | - | - | Chờ T1 |
 | T4 | Quốc | Chưa bắt đầu | - | - | Chờ T1 |
-| T5 | Quốc | Chưa bắt đầu | - | - | Chờ T2, T3, T4 |
+| T5 | Quốc | Đang làm | - | - | Đã tạo frmOrder: chọn bàn/món, tạo hóa đơn, cộng dồn món, kiểm tra kho và gửi bếp theo thứ tự Ban → HoaDon → ChiTietHoaDon. Còn chạy thử luồng trên SQL Server và nối mục Gọi món ở frmMain (file do Hải sở hữu); Thanh toán chờ T7 |
 | T6 | Quốc | Chưa bắt đầu | - | - | Chờ T5 |
 | T7 | Hải | Chưa bắt đầu | - | - | Chờ T5 |
 | T8 | Hải | Chưa bắt đầu | - | - | Chờ T7 |
