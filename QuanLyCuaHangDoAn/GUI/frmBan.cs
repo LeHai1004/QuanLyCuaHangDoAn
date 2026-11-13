@@ -5,6 +5,7 @@ using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
+using QuanLyCuaHangDoAn.Class;
 
 namespace QuanLyCuaHangDoAn
 {
@@ -116,13 +117,9 @@ namespace QuanLyCuaHangDoAn
         private string hanhDongChoDongBo;
         private string maBanDangChon = "";
 
-        public frmBan() : this("ThuNgan")
+        public frmBan()
         {
-        }
-
-        public frmBan(string chucVu)
-        {
-            laAdmin = string.Equals(chucVu, "Admin", StringComparison.Ordinal);
+            laAdmin = LaAdminHienTai();
             KhoiTaoGiaoDien();
             Load += frmBan_Load;
         }
@@ -492,22 +489,29 @@ namespace QuanLyCuaHangDoAn
 
         private bool KiemTraQuyenAdmin()
         {
-            if (laAdmin)
+            if (LaAdminHienTai())
                 return true;
             MessageBox.Show("Chỉ Admin mới được thêm, sửa hoặc xóa bàn.", "Không đủ quyền", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return false;
         }
 
+        private static bool LaAdminHienTai()
+        {
+            return PhienDangNhap.IsLoggedIn
+                && string.Equals(PhienDangNhap.ChucVu, "Admin", StringComparison.Ordinal);
+        }
+
         private void CapNhatTrangThaiNut()
         {
             bool dangChinhSua = !string.IsNullOrEmpty(cheDo);
-            bool coQuyen = laAdmin && !choDongBo;
+            bool coQuyen = LaAdminHienTai() && !choDongBo;
             btnThem.Enabled = coQuyen && !dangChinhSua;
             btnSua.Enabled = coQuyen && !dangChinhSua && !string.IsNullOrEmpty(maBanDangChon);
             btnXoa.Enabled = coQuyen && !dangChinhSua && !string.IsNullOrEmpty(maBanDangChon);
-            btnLuu.Enabled = laAdmin && (dangChinhSua || choDongBo);
+            btnLuu.Enabled = LaAdminHienTai() && (dangChinhSua || choDongBo);
             btnHuy.Enabled = coQuyen && dangChinhSua;
             btnLamMoi.Enabled = !choDongBo;
+            banSoDo.Enabled = !dangChinhSua && !choDongBo;
             txtTenBan.ReadOnly = !dangChinhSua;
             nudSoGhe.Enabled = dangChinhSua;
             cboTrangThai.Enabled = dangChinhSua;

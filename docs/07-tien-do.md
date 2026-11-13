@@ -5,9 +5,9 @@ Mỗi người tự cập nhật task của mình. Trạng thái: Chưa bắt đ
 | Task | Người | Trạng thái | Nhánh | PR | Ghi chú |
 |---|---|---|---|---|---|
 | T1 | Hải | Xong | develop | - | Đã xong FileXml, GiaoDien, script CSDL, CapNhatDb đã thử với DB thật. Còn bộ docs (đang làm) |
-| T2 | Hải | Chưa bắt đầu | - | - | Chờ T1 |
+| T2 | Hải | Chưa bắt đầu | - | - | T2 | Hải | Xong | feature/hai-dangnhap | #1 | Đăng nhập, phân quyền, nhân viên, đổi mật khẩu. Rồi: |
 | T3 | Quốc | Chưa bắt đầu | - | - | Chờ T1 |
-| T4 | Quốc | Đang làm | - | - | Đã tạo frmBan CRUD và BanSoDoControl dùng lại; build đạt. Cần thử CRUD với SQL Server và thống nhất tích hợp với T5 |
+| T4 | Quốc | Đang làm | - | - | Có CRUD, BanSoDoControl dùng lại; build đạt, đã kiểm tra sinh mã BA. Còn thử CRUD với SQL Server, tích hợp T5 và nối mục Bàn ở frmMain (file do Hải sở hữu) |
 | T5 | Quốc | Chưa bắt đầu | - | - | Chờ T2, T3, T4 |
 | T6 | Quốc | Chưa bắt đầu | - | - | Chờ T5 |
 | T7 | Hải | Chưa bắt đầu | - | - | Chờ T5 |
