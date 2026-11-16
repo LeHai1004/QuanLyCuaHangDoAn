@@ -38,6 +38,8 @@
 |---|---|---|
 | Nút bàn, màu theo trạng thái | Chọn danh mục, ô tìm món, thẻ món (tên, giá), số lượng, nút Thêm món | Món đã gọi (món, SL, tiền), tạm tính, nút Xóa dòng, Gửi bếp, Thanh toán |
 
+`frmOrder` dùng lại sơ đồ qua `BanSoDoControl`: thêm control vào panel, gọi `TaiDanhSachBan()` để tải bàn, đăng ký sự kiện `BanDuocChon` để nhận `MaBan`, `TenBan`, `SoGhe` và `TrangThai` từ `BanDuocChonEventArgs`.
+
 ## Bố cục frmBep
 | Cột Chờ | Cột Đang làm | Cột Xong |
 |---|---|---|
