@@ -30,6 +30,7 @@ namespace QuanLyCuaHangDoAn.GUI
         private readonly Label lblTamTinh = new Label();
         private readonly Button btnTaoHoaDon = GiaoDien.TaoNut("Tạo hóa đơn", GiaoDien.MauChinh);
         private readonly Button btnThemMon = GiaoDien.TaoNut("Thêm món", GiaoDien.MauXanh);
+        private readonly Button btnXoaDong = GiaoDien.TaoNut("Xóa dòng", GiaoDien.MauChinhDam);
         private readonly Button btnGuiBep = GiaoDien.TaoNut("Gửi bếp", GiaoDien.MauChinh);
         private readonly Button btnThanhToan = GiaoDien.TaoNut("Thanh toán", GiaoDien.MauChinhDam);
         private readonly ToolTip toolTip = new ToolTip();
@@ -41,6 +42,7 @@ namespace QuanLyCuaHangDoAn.GUI
         private DataTable hoaDon;
         private DataTable chiTietHoaDon;
         private DataTable chiTietDangChon;
+        private DataRow dongChiTietDangChon;
         private DataRow monDangChon;
         private string maBanDangChon = "";
         private string trangThaiBanDangChon = "";
@@ -160,11 +162,13 @@ namespace QuanLyCuaHangDoAn.GUI
                 WrapContents = false
             };
             btnGuiBep.Width = 120;
+            btnXoaDong.Width = 110;
             btnThanhToan.Width = 130;
             btnThanhToan.Enabled = false;
             toolTip.SetToolTip(btnThanhToan, "Chức năng thanh toán sẽ được nối với frmThanhToan ở T7.");
             nutThanhToan.Controls.Add(btnThanhToan);
             nutThanhToan.Controls.Add(btnGuiBep);
+            nutThanhToan.Controls.Add(btnXoaDong);
             nutHoaDon.Controls.Add(nutThanhToan);
             nutHoaDon.Controls.Add(lblTamTinh);
             cotHoaDon.Controls.Add(flpChiTiet);
@@ -179,6 +183,7 @@ namespace QuanLyCuaHangDoAn.GUI
 
             btnTaoHoaDon.Click += btnTaoHoaDon_Click;
             btnThemMon.Click += btnThemMon_Click;
+            btnXoaDong.Click += btnXoaDong_Click;
             btnGuiBep.Click += btnGuiBep_Click;
             cboDanhMuc.SelectedIndexChanged += cboDanhMuc_SelectedIndexChanged;
             txtTim.TextChanged += txtTim_TextChanged;
@@ -377,6 +382,7 @@ namespace QuanLyCuaHangDoAn.GUI
             trangThaiBanDangChon = luaChon.TrangThai;
             maHoaDonDangChon = "";
             chiTietDangChon = chiTietHoaDon.Clone();
+            dongChiTietDangChon = null;
             coThayDoiChuaGui = false;
             monDangChon = null;
             if (hoaDonDangMo.Count == 1)
@@ -496,14 +502,26 @@ namespace QuanLyCuaHangDoAn.GUI
             int soLuong = Convert.ToInt32(nudSoLuong.Value);
             try
             {
-                if (!Kho.DuNguyenLieu(maMon, soLuong))
+                DataRow dongChiTiet = chiTietDangChon.AsEnumerable()
+                    .FirstOrDefault(dong => string.Equals(Convert.ToString(dong["MaMon"]), maMon, StringComparison.OrdinalIgnoreCase));
+                int soLuongCu = dongChiTiet == null ? 0 : Convert.ToInt32(dongChiTiet["SoLuong"]);
+                if (soLuong > int.MaxValue - soLuongCu)
+                    throw new InvalidOperationException("Số lượng món vượt giới hạn cho phép.");
+                if (dongChiTiet != null && DaGuiBep(dongChiTiet))
                 {
-                    MessageBox.Show("Hết", "Không đủ nguyên liệu", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("Món này đã gửi bếp, không thể tăng số lượng. Vui lòng thêm món khác.",
+                        "Món đã gửi bếp", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
 
-                DataRow dongChiTiet = chiTietDangChon.AsEnumerable()
-                    .FirstOrDefault(dong => string.Equals(Convert.ToString(dong["MaMon"]), maMon, StringComparison.OrdinalIgnoreCase));
+                int tongSoLuong = soLuongCu + soLuong;
+                if (!Kho.DuNguyenLieu(maMon, tongSoLuong))
+                {
+                    MessageBox.Show("Không đủ nguyên liệu cho tổng số lượng món trong hóa đơn.",
+                        "Không đủ nguyên liệu", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
                 if (dongChiTiet == null)
                 {
                     dongChiTiet = chiTietDangChon.NewRow();
@@ -516,12 +534,8 @@ namespace QuanLyCuaHangDoAn.GUI
                 }
                 else
                 {
-                    int soLuongCu = Convert.ToInt32(dongChiTiet["SoLuong"]);
-                    if (soLuong > int.MaxValue - soLuongCu)
-                        throw new InvalidOperationException("Số lượng món vượt giới hạn cho phép.");
-                    dongChiTiet["SoLuong"] = soLuongCu + soLuong;
+                    dongChiTiet["SoLuong"] = tongSoLuong;
                     dongChiTiet["DonGia"] = Convert.ToDecimal(monDangChon["DonGia"]);
-                    dongChiTiet["TrangThaiBep"] = TrangThaiBepCho;
                 }
 
                 coThayDoiChuaGui = true;
@@ -532,6 +546,35 @@ namespace QuanLyCuaHangDoAn.GUI
             {
                 HienLoi("Không thể thêm món", ex);
             }
+        }
+
+        private void btnXoaDong_Click(object sender, EventArgs e)
+        {
+            if (!KiemTraQuyenBanHang() || choDongBo)
+                return;
+            if (dongChiTietDangChon == null || chiTietDangChon == null
+                || !chiTietDangChon.AsEnumerable().Any(dong => ReferenceEquals(dong, dongChiTietDangChon)))
+            {
+                MessageBox.Show("Vui lòng chọn một dòng món trong hóa đơn.", "Chưa chọn dòng",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            if (DaGuiBep(dongChiTietDangChon)
+                || !string.Equals(Convert.ToString(dongChiTietDangChon["TrangThaiBep"]), TrangThaiBepCho, StringComparison.Ordinal))
+            {
+                MessageBox.Show("Món đã gửi bếp nên không thể xóa khỏi hóa đơn.", "Món đã gửi bếp",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (MessageBox.Show("Bạn có chắc chắn muốn xóa dòng món này khỏi hóa đơn?", "Xác nhận xóa",
+                MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                return;
+
+            chiTietDangChon.Rows.Remove(dongChiTietDangChon);
+            dongChiTietDangChon = null;
+            coThayDoiChuaGui = chiTietDangChon.AsEnumerable().Any(dong => !DaGuiBep(dong));
+            HienThiChiTiet();
         }
 
         private void btnGuiBep_Click(object sender, EventArgs e)
@@ -559,6 +602,18 @@ namespace QuanLyCuaHangDoAn.GUI
 
             try
             {
+                List<DataRow> dongChoGui = chiTietDangChon.AsEnumerable()
+                    .Where(dong => !DaGuiBep(dong))
+                    .ToList();
+                if (dongChoGui.Count == 0)
+                {
+                    MessageBox.Show("Chưa có món mới để gửi bếp.", "Thông báo",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    coThayDoiChuaGui = false;
+                    CapNhatTrangThaiNut();
+                    return;
+                }
+
                 fx.TaoXml("SELECT * FROM Ban", "Ban", "Ban.xml");
                 fx.TaoXml("SELECT * FROM HoaDon", "HoaDon", "HoaDon.xml");
                 fx.TaoXml("SELECT * FROM ChiTietHoaDon", "ChiTietHoaDon", "ChiTietHoaDon.xml");
@@ -574,30 +629,22 @@ namespace QuanLyCuaHangDoAn.GUI
                     || !string.Equals(Convert.ToString(dongHoaDon["MaBan"]), maBanDangChon, StringComparison.OrdinalIgnoreCase))
                     throw new InvalidOperationException("Không tìm thấy hóa đơn đang phục vụ của bàn đã chọn.");
 
-                foreach (DataRow dong in chiTietDangChon.Rows)
+                foreach (DataRow dong in dongChoGui)
                 {
-                    dong["TrangThaiBep"] = TrangThaiBepCho;
                     string maMon = Convert.ToString(dong["MaMon"]);
                     DataRow dongDaLuu = TimDongChiTiet(chiTietMoi, maHoaDonDangChon, maMon);
+                    if (dongDaLuu != null)
+                        throw new InvalidOperationException("Món đã được lưu trong hóa đơn; vui lòng tải lại trước khi gửi bếp.");
                     var giaTri = new Dictionary<string, string>
                     {
                         { "SoLuong", Convert.ToInt32(dong["SoLuong"]).ToString(CultureInfo.InvariantCulture) },
                         { "DonGia", Convert.ToDecimal(dong["DonGia"]).ToString("0", CultureInfo.InvariantCulture) },
                         { "TrangThaiBep", TrangThaiBepCho }
                     };
-                    if (dongDaLuu == null)
-                    {
-                        giaTri["MaHD"] = maHoaDonDangChon;
-                        giaTri["MaMon"] = maMon;
-                        string[] thuTuCot = { "MaHD", "MaMon", "SoLuong", "DonGia", "TrangThaiBep" };
-                        fx.Them("ChiTietHoaDon.xml", "ChiTietHoaDon", TaoGiaTriTheoThuTu(thuTuCot, giaTri));
-                    }
-                    else if (fx.Sua("ChiTietHoaDon.xml",
-                        new Dictionary<string, string> { { "MaHD", maHoaDonDangChon }, { "MaMon", maMon } },
-                        giaTri) == 0)
-                    {
-                        throw new InvalidOperationException("Không tìm thấy món cần cập nhật trong hóa đơn.");
-                    }
+                    giaTri["MaHD"] = maHoaDonDangChon;
+                    giaTri["MaMon"] = maMon;
+                    string[] thuTuCot = { "MaHD", "MaMon", "SoLuong", "DonGia", "TrangThaiBep" };
+                    fx.Them("ChiTietHoaDon.xml", "ChiTietHoaDon", TaoGiaTriTheoThuTu(thuTuCot, giaTri));
                 }
 
                 decimal tongTien = TinhTamTinh();
@@ -706,14 +753,19 @@ namespace QuanLyCuaHangDoAn.GUI
                             Width = chieuRong,
                             Height = 58,
                             Margin = new Padding(3),
-                            BackColor = GiaoDien.MauNenNhat
+                            BackColor = GiaoDien.MauNenNhat,
+                            BorderStyle = ReferenceEquals(dong, dongChiTietDangChon)
+                                ? BorderStyle.FixedSingle
+                                : BorderStyle.None,
+                            Tag = dong
                         };
                         var lblTen = new Label
                         {
                             Text = tenMon,
                             Dock = DockStyle.Top,
                             Height = 26,
-                            Font = GiaoDien.FontDam
+                            Font = GiaoDien.FontDam,
+                            Tag = dong
                         };
                         var lblGia = new Label
                         {
@@ -721,8 +773,12 @@ namespace QuanLyCuaHangDoAn.GUI
                                 + " = " + DinhDangTien(donGia * soLuong)
                                 + "   (" + Convert.ToString(dong["TrangThaiBep"]) + ")",
                             Dock = DockStyle.Fill,
-                            TextAlign = ContentAlignment.MiddleLeft
+                            TextAlign = ContentAlignment.MiddleLeft,
+                            Tag = dong
                         };
+                        dongHienThi.Click += chiTiet_Click;
+                        lblTen.Click += chiTiet_Click;
+                        lblGia.Click += chiTiet_Click;
                         dongHienThi.Controls.Add(lblGia);
                         dongHienThi.Controls.Add(lblTen);
                         flpChiTiet.Controls.Add(dongHienThi);
@@ -736,6 +792,13 @@ namespace QuanLyCuaHangDoAn.GUI
 
             lblTamTinh.Text = "Tạm tính: " + DinhDangTien(TinhTamTinh());
             CapNhatTrangThaiNut();
+        }
+
+        private void chiTiet_Click(object sender, EventArgs e)
+        {
+            var control = sender as Control;
+            dongChiTietDangChon = control == null ? null : control.Tag as DataRow;
+            HienThiChiTiet();
         }
 
         private decimal TinhTamTinh()
@@ -759,6 +822,7 @@ namespace QuanLyCuaHangDoAn.GUI
             btnTaoHoaDon.Enabled = coQuyen && (dangTaoHoaDon
                 || (!choDongBo && !coThayDoiChuaGui && !coHoaDon
                     && !string.IsNullOrEmpty(maBanDangChon) && trangThaiBanDangChon == TrangThaiBanTrong));
+            btnXoaDong.Enabled = coQuyen && !choDongBo && coHoaDon && dongChiTietDangChon != null;
             btnGuiBep.Enabled = coQuyen && (dangGuiBep
                 || (!choDongBo && coHoaDon && coThayDoiChuaGui && coMon));
             btnThemMon.Enabled = coQuyen && !choDongBo && coHoaDon && monDangChon != null;
@@ -768,6 +832,11 @@ namespace QuanLyCuaHangDoAn.GUI
             cboDanhMuc.Enabled = !choDongBo;
             txtTim.Enabled = !choDongBo;
             nudSoLuong.Enabled = !choDongBo;
+        }
+
+        private bool DaGuiBep(DataRow dong)
+        {
+            return TimDongChiTiet(chiTietHoaDon, Convert.ToString(dong["MaHD"]), Convert.ToString(dong["MaMon"])) != null;
         }
 
         private bool KiemTraQuyenBanHang()
