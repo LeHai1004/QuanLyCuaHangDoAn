@@ -52,6 +52,7 @@
     <Compile Include="Class\FileXml.cs" />
     <Compile Include="Class\GiaoDien.cs" />
     <Compile Include="Class\KhoKhachHang.cs" />
+    <Compile Include="GUI\frmBan.cs" />
     <Compile Include="GUI\frmDanhMuc.cs">
       <SubType>Form</SubType>
     </Compile>
