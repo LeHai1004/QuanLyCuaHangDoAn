@@ -164,8 +164,6 @@ namespace QuanLyCuaHangDoAn.GUI
             btnGuiBep.Width = 120;
             btnXoaDong.Width = 110;
             btnThanhToan.Width = 130;
-            btnThanhToan.Enabled = false;
-            toolTip.SetToolTip(btnThanhToan, "Chức năng thanh toán sẽ được nối với frmThanhToan ở T7.");
             nutThanhToan.Controls.Add(btnThanhToan);
             nutThanhToan.Controls.Add(btnGuiBep);
             nutThanhToan.Controls.Add(btnXoaDong);
@@ -185,6 +183,7 @@ namespace QuanLyCuaHangDoAn.GUI
             btnThemMon.Click += btnThemMon_Click;
             btnXoaDong.Click += btnXoaDong_Click;
             btnGuiBep.Click += btnGuiBep_Click;
+            btnThanhToan.Click += btnThanhToan_Click;
             cboDanhMuc.SelectedIndexChanged += cboDanhMuc_SelectedIndexChanged;
             txtTim.TextChanged += txtTim_TextChanged;
             flpChiTiet.Resize += flpChiTiet_Resize;
@@ -577,6 +576,43 @@ namespace QuanLyCuaHangDoAn.GUI
             HienThiChiTiet();
         }
 
+        private void btnThanhToan_Click(object sender, EventArgs e)
+        {
+            if (!KiemTraQuyenBanHang() || choDongBo)
+                return;
+            if (string.IsNullOrEmpty(maHoaDonDangChon) || coThayDoiChuaGui)
+            {
+                MessageBox.Show("Vui lòng gửi bếp hết các món trước khi thanh toán.", "Chưa thể thanh toán",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            try
+            {
+                string maHoaDonVuaTra = maHoaDonDangChon;
+                using (frmThanhToan f = new frmThanhToan(maHoaDonDangChon))
+                {
+                    if (f.ShowDialog(this) != DialogResult.OK)
+                        return;
+                }
+                MessageBox.Show("Đã thanh toán hóa đơn " + maHoaDonVuaTra + ".", "Thanh toán thành công",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                maBanDangChon = "";
+                trangThaiBanDangChon = "";
+                maHoaDonDangChon = "";
+                chiTietDangChon = null;
+                dongChiTietDangChon = null;
+                lblBanDangChon.Text = "";
+                TaiDuLieu();
+                HienThiChiTiet();
+                CapNhatTrangThaiNut();
+            }
+            catch (Exception ex)
+            {
+                HienLoi("Không thể thanh toán", ex);
+            }
+        } 
         private void btnGuiBep_Click(object sender, EventArgs e)
         {
             if (choDongBo)
@@ -826,7 +862,7 @@ namespace QuanLyCuaHangDoAn.GUI
             btnGuiBep.Enabled = coQuyen && (dangGuiBep
                 || (!choDongBo && coHoaDon && coThayDoiChuaGui && coMon));
             btnThemMon.Enabled = coQuyen && !choDongBo && coHoaDon && monDangChon != null;
-            btnThanhToan.Enabled = false;
+            btnThanhToan.Enabled = coQuyen && !choDongBo && coHoaDon && coMon && !coThayDoiChuaGui;
             flpBan.Enabled = !choDongBo && !coThayDoiChuaGui;
             flpMon.Enabled = !choDongBo;
             cboDanhMuc.Enabled = !choDongBo;
