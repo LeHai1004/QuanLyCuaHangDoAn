@@ -160,8 +160,30 @@ namespace QuanLyCuaHangDoAn.GUI
                 }
                 return;
             }
+            if (muc.Text == "Sơ đồ bàn")
+            {
+                MoForm(new frmBan());
+                return;
+            }
+            if (muc.Text == "Hóa đơn")
+            {
+                MoForm(new frmHoaDon());
+                return;
+            }
+            if (muc.Text == "Gọi món")
+            {
+                MoForm(new frmOrder());
+                return;
+            }
             MessageBox.Show("Chức năng \"" + muc.Text + "\" đang được phát triển.", "Thông báo",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+        private void MoForm(Form f)
+        {
+            using (f)
+            {
+                f.ShowDialog(this);
+            }
         }
 
         private void DangXuat_Click(object sender, EventArgs e)
