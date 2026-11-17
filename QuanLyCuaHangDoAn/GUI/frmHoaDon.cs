@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Windows.Forms;
+using System.Xml.Linq;
+using System.Xml.Xsl;
 using QuanLyCuaHangDoAn;
 using QuanLyCuaHangDoAn.Class;
 
@@ -417,8 +420,97 @@ namespace QuanLyCuaHangDoAn.GUI
             if (!btnInHoaDon.Enabled)
                 return;
 
-            MessageBox.Show(this, "Chức năng in hóa đơn sẽ làm ở T8.",
-                "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            try
+            {
+                string maHoaDon = Convert.ToString(dgvHoaDon.SelectedRows[0].Cells["MaHD"].Value);
+                DataRow dongHoaDon = TimDong(hoaDon, "MaHD", maHoaDon);
+                if (dongHoaDon == null
+                    || Convert.ToString(dongHoaDon["TrangThai"]) != TrangThaiHoaDonDaThanhToan)
+                    throw new InvalidOperationException("Chỉ có thể in hóa đơn đã thanh toán.");
+
+                string maTepIn = Guid.NewGuid().ToString("N");
+                string tenXml = "HoaDonIn-" + maTepIn + ".xml";
+                string tenHtml = "HoaDon-" + maTepIn + ".html";
+                TaoDuLieuHoaDon(dongHoaDon, maHoaDon).Save(FileXml.DuongDan(tenXml));
+
+                var thamSo = new XsltArgumentList();
+                thamSo.AddParam("maHD", "", maHoaDon);
+                fx.XuatHtml(tenXml, "HoaDon.xslt", thamSo, tenHtml);
+                File.Delete(FileXml.DuongDan(tenXml));
+                FileXml.MoTrinhDuyet(tenHtml);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, "Không thể tạo hoặc mở hóa đơn để in.\n" + ex.Message,
+                    "Lỗi in hóa đơn", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private XDocument TaoDuLieuHoaDon(DataRow dongHoaDon, string maHoaDon)
+        {
+            string maBan = Convert.ToString(dongHoaDon["MaBan"]);
+            string maNhanVien = Convert.ToString(dongHoaDon["MaNV"]);
+            DataRow dongBan = TimDong(ban, "MaBan", maBan);
+            DataRow dongNhanVien = TimDong(nhanVien, "MaNV", maNhanVien);
+            if (dongBan == null)
+                throw new InvalidOperationException("Không tìm thấy bàn của hóa đơn.");
+            if (dongNhanVien == null)
+                throw new InvalidOperationException("Không tìm thấy nhân viên lập hóa đơn.");
+
+            string tenKhachHang = "";
+            if (!dongHoaDon.IsNull("MaKH"))
+            {
+                DataRow dongKhachHang = TimDong(khachHang, "MaKH", Convert.ToString(dongHoaDon["MaKH"]));
+                if (dongKhachHang == null)
+                    throw new InvalidOperationException("Không tìm thấy khách hàng của hóa đơn.");
+                tenKhachHang = Convert.ToString(dongKhachHang["TenKH"]);
+            }
+
+            var cacDongChiTiet = new XElement("ChiTietHoaDon");
+            decimal tamTinh = 0m;
+            foreach (DataRow dong in chiTietHoaDon.Rows)
+            {
+                if (!string.Equals(Convert.ToString(dong["MaHD"]), maHoaDon,
+                    StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                string maMon = Convert.ToString(dong["MaMon"]);
+                DataRow dongMon = TimDong(monAn, "MaMon", maMon);
+                if (dongMon == null)
+                    throw new InvalidOperationException("Không tìm thấy món " + maMon + " trong hóa đơn.");
+
+                int soLuong = Convert.ToInt32(dong["SoLuong"]);
+                decimal donGia = Convert.ToDecimal(dong["DonGia"]);
+                decimal thanhTien = soLuong * donGia;
+                tamTinh += thanhTien;
+                cacDongChiTiet.Add(new XElement("ChiTiet",
+                    new XElement("TenMon", Convert.ToString(dongMon["TenMon"])),
+                    new XElement("SoLuong", soLuong.ToString(CultureInfo.InvariantCulture)),
+                    new XElement("DonGia", donGia.ToString("0.##", CultureInfo.InvariantCulture)),
+                    new XElement("ThanhTien", thanhTien.ToString("0.##", CultureInfo.InvariantCulture))));
+            }
+
+            return new XDocument(
+                new XElement("DuLieu",
+                    new XElement("HoaDon",
+                        new XElement("MaHD", maHoaDon),
+                        new XElement("NgayLap", Convert.ToDateTime(dongHoaDon["NgayLap"])
+                            .ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture)),
+                        new XElement("TenBan", Convert.ToString(dongBan["TenBan"])),
+                        new XElement("TenNhanVien", Convert.ToString(dongNhanVien["TenNV"])),
+                        new XElement("TenKhachHang", tenKhachHang),
+                        new XElement("TamTinh", tamTinh.ToString("0.##", CultureInfo.InvariantCulture)),
+                        new XElement("PhanTramGiam",
+                            Convert.ToDecimal(dongHoaDon["PhanTramGiam"]).ToString("0.##", CultureInfo.InvariantCulture)),
+                        new XElement("TongTien",
+                            Convert.ToDecimal(dongHoaDon["TongTien"]).ToString("0.##", CultureInfo.InvariantCulture)),
+                        cacDongChiTiet)));
+        }
+
+        private static DataRow TimDong(DataTable bang, string cotMa, string ma)
+        {
+            return bang.AsEnumerable().FirstOrDefault(dong =>
+                string.Equals(Convert.ToString(dong[cotMa]), ma, StringComparison.OrdinalIgnoreCase));
         }
 
         private void CapNhatThongKe(int soHoaDon, decimal doanhThu)

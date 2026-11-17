@@ -11,7 +11,7 @@ Mỗi người tự cập nhật task của mình. Trạng thái: Chưa bắt đ
 | T5 | Quốc | Đang làm | - | - | Đã tạo frmOrder: chọn bàn/món, tạo hóa đơn, xóa dòng chưa gửi, chặn sửa món đã gửi, gửi riêng dòng mới và kiểm tra kho theo tổng số lượng. Còn chạy thử luồng trên SQL Server và nối mục Gọi món ở frmMain (file do Hải sở hữu); Thanh toán chờ T7 |
 | T6 | Quốc | Chưa bắt đầu | - | - | Chờ T5 |
 | T7 | Hải | Chờ review | - | - | Đã tạo frmThanhToan; giao dịch thanh toán, cập nhật XML và tìm khách bằng SĐT. Cần chạy thử với SQL Server và các hàm tích điểm/trừ kho đã hoàn thiện |
-| T8 | Hải | Chưa bắt đầu | - | - | Chờ T7 |
+| T8 | Hải | Chờ review | - | - | Đã tạo XSLT in hóa đơn, gộp dữ liệu theo hóa đơn được chọn và mở HTML bằng trình duyệt. Cần chạy thử từ ứng dụng và kiểm tra bản in thực tế |
 | T9 | Duy | Chưa bắt đầu | - | - | Chờ T1 |
 | T10 | Duy | Chưa bắt đầu | - | - | Chờ T1 |
 | T11 | Duy | Chưa bắt đầu | - | - | Chờ T3, T10 |
