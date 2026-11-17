@@ -57,6 +57,9 @@
     <Compile Include="GUI\frmDanhMuc.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="GUI\frmHoaDon.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="GUI\frmMonAn.cs">
       <SubType>Form</SubType>
     </Compile>

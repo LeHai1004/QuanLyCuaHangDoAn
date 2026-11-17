@@ -165,6 +165,11 @@ namespace QuanLyCuaHangDoAn.GUI
                 MoForm(new frmBan());
                 return;
             }
+            if (muc.Text == "Hóa đơn")
+            {
+                MoForm(new frmHoaDon());
+                return;
+            }
             if (muc.Text == "Gọi món")
             {
                 MoForm(new frmOrder());
