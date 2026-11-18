@@ -17,7 +17,7 @@ Mỗi người tự cập nhật task của mình. Trạng thái: Chưa bắt đ
 | T11 | Duy | Chưa bắt đầu | - | - | Chờ T3, T10 |
 | T12 | Duy | Chưa bắt đầu | - | - | Chờ T10 |
 | T13 | Duy | Chưa bắt đầu | - | - | Chờ T3 |
-| T14 | Quốc | Chưa bắt đầu | - | - | Chờ T7 |
+| T14 | Quốc | Chờ review | feature/quoc-thongke | - | Đã tạo frmThongKe: 2 DateTimePicker lấy đến hết ngày cuối, chỉ tính HĐ Đã thanh toán, truy vấn SQL dùng SqlParameter; hiển thị tổng doanh thu, số HĐ, doanh thu TB, bảng doanh thu theo ngày, top 5 món bán chạy kèm biểu đồ cột DataVisualization |
 | T15 | Cả nhóm | Chưa bắt đầu | - | - | Sau khi xong tất cả |
 | T16 | Cả nhóm | Chưa bắt đầu | - | - | Làm song song |
 
