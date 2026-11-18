@@ -15,26 +15,27 @@ namespace QuanLyCuaHangDoAn
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
+            Application.Run(new frmThongKe());
             // Đăng nhập -> vào frmMain; bấm Đăng xuất thì quay lại đăng nhập
-            while (true)
-            {
-                using (frmDangNhap dangNhap = new frmDangNhap())
-                {
-                    if (dangNhap.ShowDialog() != DialogResult.OK)
-                    {
-                        break;
-                    }
-                }
+            //while (true)
+            //{
+            //    using (frmDangNhap dangNhap = new frmDangNhap())
+            //    {
+            //        if (dangNhap.ShowDialog() != DialogResult.OK)
+            //        {
+            //            break;
+            //        }
+            //    }
 
-                using (frmMain chinh = new frmMain())
-                {
-                    Application.Run(chinh);
-                    if (!chinh.DangXuat)
-                    {
-                        break;
-                    }
-                }
-            }
+            //    using (frmMain chinh = new frmMain())
+            //    {
+            //        Application.Run(chinh);
+            //        if (!chinh.DangXuat)
+            //        {
+            //            break;
+            //        }
+            //    }
+            //}
         }
     }
 }
