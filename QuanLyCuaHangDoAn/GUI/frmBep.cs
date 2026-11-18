@@ -304,22 +304,17 @@ namespace QuanLyCuaHangDoAn.GUI
                     else if (string.Equals(trangThaiBep, TrangThaiBepXong, StringComparison.OrdinalIgnoreCase))
                     {
                         // Cột Xong chỉ giữ vài phút gần nhất (PhutGiuCotXong = 5 phút)
+                        // Khi lần đầu thấy món ở trạng thái Xong, lưu DateTime.Now vào cache làm mốc (không dùng NgayLap của hóa đơn)
                         DateTime tgXong;
                         if (!thoiGianXong.TryGetValue(khoa, out tgXong))
                         {
-                            if ((bayGio - ngayLap).TotalMinutes <= PhutGiuCotXong)
-                            {
-                                tgXong = bayGio;
-                                thoiGianXong[khoa] = tgXong;
-                                dsXong.Add(item);
-                            }
+                            tgXong = bayGio;
+                            thoiGianXong[khoa] = tgXong;
                         }
-                        else
+
+                        if ((bayGio - tgXong).TotalMinutes <= PhutGiuCotXong)
                         {
-                            if ((bayGio - tgXong).TotalMinutes <= PhutGiuCotXong)
-                            {
-                                dsXong.Add(item);
-                            }
+                            dsXong.Add(item);
                         }
                     }
                 }
@@ -331,7 +326,7 @@ namespace QuanLyCuaHangDoAn.GUI
                 dsXong = dsXong.OrderByDescending(x =>
                 {
                     string k = x.MaHD + "#" + x.MaMon;
-                    return thoiGianXong.ContainsKey(k) ? thoiGianXong[k] : x.NgayLap;
+                    return thoiGianXong.ContainsKey(k) ? thoiGianXong[k] : bayGio;
                 }).ToList();
 
                 // Dọn dẹp cache thời gian xong của các món đã quá 30 phút để tránh tốn bộ nhớ
