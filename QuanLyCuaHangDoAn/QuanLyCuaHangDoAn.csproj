@@ -79,6 +79,9 @@
     <Compile Include="GUI\frmPhieuNhap.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="GUI\frmNhapXml.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="GUI\frmCongThuc.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -138,6 +141,13 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <None Include="Data\.gitkeep" />
+    <None Include="Data\MonAn.xsd">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Data\DanhMuc.xsd">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Data\TestXml\*.xml" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
