@@ -13,7 +13,7 @@ Mỗi người tự cập nhật task của mình. Trạng thái: Chưa bắt đ
 | T7 | Hải | Chờ review | - | - | Đã tạo frmThanhToan; giao dịch thanh toán, cập nhật XML và tìm khách bằng SĐT. Cần chạy thử với SQL Server và các hàm tích điểm/trừ kho đã hoàn thiện |
 | T8 | Hải | Chờ review | - | - | Đã tạo XSLT in hóa đơn, gộp dữ liệu theo hóa đơn được chọn và mở HTML bằng trình duyệt. Cần chạy thử từ ứng dụng và kiểm tra bản in thực tế |
 | T9 | Duy | Chưa bắt đầu | - | - | Chờ T1 |
-| T10 | Duy | Chưa bắt đầu | - | - | Chờ T1 |
+| T10 | Duy | Chờ review | feature/duy-nguyenlieu | - | Đã tạo frmNguyenLieu và frmNhaCungCap: CRUD đầy đủ, tự sinh mã NL/NCC, phân quyền Admin, kiểm tra khóa ngoại trước khi xóa, cảnh báo nguyên liệu sắp hết (tô đỏ TonKho <= DinhMuc), chống lỗi SplitContainer scale 125% và đồng bộ hai chiều XML với SQL Server |
 | T11 | Duy | Chưa bắt đầu | - | - | Chờ T3, T10 |
 | T12 | Duy | Chưa bắt đầu | - | - | Chờ T10 |
 | T13 | Duy | Chưa bắt đầu | - | - | Chờ T3 |
