@@ -134,102 +134,101 @@ namespace QuanLyCuaHangDoAn
     {
         public static void TruKhoTheoHoaDon(string maHD)
         {
-            if (string.IsNullOrWhiteSpace(maHD)) return;
-            try
+            if (string.IsNullOrWhiteSpace(maHD))
+                return;
+
+            using (var conn = new SqlConnection(FileXml.ChuoiKetNoi))
             {
-                using (var conn = new SqlConnection(FileXml.ChuoiKetNoi))
+                conn.Open();
+                using (var tran = conn.BeginTransaction())
                 {
-                    conn.Open();
-                    using (var tran = conn.BeginTransaction())
+                    try
                     {
-                        try
+                        var chiTiet = new DataTable();
+                        using (var cmd = new SqlCommand(
+                            "SELECT ct.MaMon, ct.SoLuong, c.MaNL, c.SoLuong AS SoLuongCongThuc " +
+                            "FROM ChiTietHoaDon ct INNER JOIN CongThuc c ON ct.MaMon = c.MaMon " +
+                            "WHERE ct.MaHD = @MaHD", conn, tran))
                         {
-                            var chiTiet = new DataTable();
-                            using (var cmd = new SqlCommand(
-                                "SELECT ct.MaMon, ct.SoLuong, c.MaNL, c.SoLuong AS SoLuongCongThuc " +
-                                "FROM ChiTietHoaDon ct INNER JOIN CongThuc c ON ct.MaMon = c.MaMon " +
-                                "WHERE ct.MaHD = @MaHD", conn, tran))
-                            {
-                                cmd.Parameters.Add("@MaHD", SqlDbType.NVarChar, 10).Value = maHD.Trim();
-                                using (var da = new SqlDataAdapter(cmd)) da.Fill(chiTiet);
-                            }
-                            if (chiTiet.Rows.Count == 0) { tran.Commit(); return; }
-
-                            foreach (DataRow dong in chiTiet.Rows)
-                            {
-                                using (var cmd = new SqlCommand(
-                                    "UPDATE NguyenLieu SET TonKho = CASE WHEN TonKho >= @Luong " +
-                                    "THEN TonKho - @Luong ELSE 0 END WHERE MaNL = @MaNL", conn, tran))
-                                {
-                                    cmd.Parameters.Add("@Luong", SqlDbType.Decimal).Value =
-                                        Convert.ToDecimal(dong["SoLuongCongThuc"]) * Convert.ToInt32(dong["SoLuong"]);
-                                    cmd.Parameters.Add("@MaNL", SqlDbType.NVarChar, 10).Value = dong["MaNL"];
-                                    cmd.ExecuteNonQuery();
-                                }
-                            }
-
-                            using (var cmd = new SqlCommand(
-                                "UPDATE m SET TrangThai = CASE WHEN EXISTS (" +
-                                "SELECT 1 FROM CongThuc c LEFT JOIN NguyenLieu n ON n.MaNL = c.MaNL " +
-                                "WHERE c.MaMon = m.MaMon AND ISNULL(n.TonKho, 0) < c.SoLuong " +
-                                ") THEN N'Hết' ELSE N'Còn bán' END FROM MonAn m", conn, tran))
-                                cmd.ExecuteNonQuery();
-                            tran.Commit();
+                            cmd.Parameters.Add("@MaHD", SqlDbType.NVarChar, 10).Value = maHD.Trim();
+                            using (var da = new SqlDataAdapter(cmd))
+                                da.Fill(chiTiet);
                         }
-                        catch
+
+                        if (chiTiet.Rows.Count == 0)
                         {
-                            try { tran.Rollback(); } catch { }
+                            tran.Commit();
                             return;
                         }
+
+                        foreach (DataRow dong in chiTiet.Rows)
+                        {
+                            using (var cmd = new SqlCommand(
+                                "UPDATE NguyenLieu SET TonKho = CASE WHEN TonKho >= @Luong " +
+                                "THEN TonKho - @Luong ELSE 0 END WHERE MaNL = @MaNL", conn, tran))
+                            {
+                                cmd.Parameters.Add("@Luong", SqlDbType.Decimal).Value =
+                                    Convert.ToDecimal(dong["SoLuongCongThuc"]) * Convert.ToInt32(dong["SoLuong"]);
+                                cmd.Parameters.Add("@MaNL", SqlDbType.NVarChar, 10).Value = dong["MaNL"];
+                                cmd.ExecuteNonQuery();
+                            }
+                        }
+
+                        using (var cmd = new SqlCommand(
+                            "UPDATE m SET TrangThai = CASE WHEN EXISTS (" +
+                            "SELECT 1 FROM CongThuc c LEFT JOIN NguyenLieu n ON n.MaNL = c.MaNL " +
+                            "WHERE c.MaMon = m.MaMon AND ISNULL(n.TonKho, 0) < c.SoLuong " +
+                            ") THEN N'Hết' ELSE N'Còn bán' END FROM MonAn m", conn, tran))
+                            cmd.ExecuteNonQuery();
+
+                        tran.Commit();
+                    }
+                    catch
+                    {
+                        tran.Rollback();
+                        throw;
                     }
                 }
-                DongBoXmlKho();
             }
-            catch { }
+
+            DongBoXmlKho();
         }
 
         public static bool DuNguyenLieu(string maMon, int soLuong)
         {
-            if (string.IsNullOrWhiteSpace(maMon) || soLuong <= 0) return true;
-            try
+            if (string.IsNullOrWhiteSpace(maMon) || soLuong <= 0)
+                return false;
+
+            using (var conn = new SqlConnection(FileXml.ChuoiKetNoi))
+            using (var cmd = new SqlCommand(
+                "SELECT CASE WHEN EXISTS (SELECT 1 FROM MonAn WHERE MaMon = @MaMon) " +
+                "AND NOT EXISTS (SELECT 1 FROM CongThuc c LEFT JOIN NguyenLieu n ON n.MaNL = c.MaNL " +
+                "WHERE c.MaMon = @MaMon AND ISNULL(n.TonKho, 0) < c.SoLuong * @SoLuong) " +
+                "THEN 1 ELSE 0 END", conn))
             {
-                using (var conn = new SqlConnection(FileXml.ChuoiKetNoi))
-                using (var cmd = new SqlCommand(
-                    "SELECT COUNT(*) FROM CongThuc c LEFT JOIN NguyenLieu n ON n.MaNL = c.MaNL " +
-                    "WHERE c.MaMon = @MaMon AND ISNULL(n.TonKho, 0) < c.SoLuong * @SoLuong", conn))
-                {
-                    cmd.Parameters.Add("@MaMon", SqlDbType.NVarChar, 10).Value = maMon.Trim();
-                    cmd.Parameters.Add("@SoLuong", SqlDbType.Int).Value = soLuong;
-                    conn.Open();
-                    return Convert.ToInt32(cmd.ExecuteScalar()) == 0;
-                }
+                cmd.Parameters.Add("@MaMon", SqlDbType.NVarChar, 10).Value = maMon.Trim();
+                cmd.Parameters.Add("@SoLuong", SqlDbType.Int).Value = soLuong;
+                conn.Open();
+                return Convert.ToInt32(cmd.ExecuteScalar()) == 1;
             }
-            catch { return false; }
         }
 
         public static DataTable LayCanhBao()
         {
             var ketQua = new DataTable("NguyenLieuCanhBao");
-            try
-            {
-                using (var conn = new SqlConnection(FileXml.ChuoiKetNoi))
-                using (var da = new SqlDataAdapter(
-                    "SELECT MaNL, TenNL, DVT, TonKho, DinhMuc FROM NguyenLieu " +
-                    "WHERE TonKho <= DinhMuc ORDER BY MaNL", conn)) da.Fill(ketQua);
-            }
-            catch { }
+            using (var conn = new SqlConnection(FileXml.ChuoiKetNoi))
+            using (var da = new SqlDataAdapter(
+                "SELECT MaNL, TenNL, DVT, TonKho, DinhMuc FROM NguyenLieu " +
+                "WHERE TonKho <= DinhMuc ORDER BY MaNL", conn))
+                da.Fill(ketQua);
             return ketQua;
         }
 
         private static void DongBoXmlKho()
         {
-            try
-            {
-                var fx = new FileXml();
-                fx.TaoXml("SELECT * FROM NguyenLieu", "NguyenLieu", "NguyenLieu.xml");
-                fx.TaoXml("SELECT * FROM MonAn", "MonAn", "MonAn.xml");
-            }
-            catch { }
+            var fx = new FileXml();
+            fx.TaoXml("SELECT * FROM NguyenLieu", "NguyenLieu", "NguyenLieu.xml");
+            fx.TaoXml("SELECT * FROM MonAn", "MonAn", "MonAn.xml");
         }
     }
 }

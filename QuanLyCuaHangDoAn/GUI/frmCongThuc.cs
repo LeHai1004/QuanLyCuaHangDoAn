@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
 using System.Drawing;
 using System.Globalization;
 using System.Windows.Forms;
@@ -28,6 +27,8 @@ namespace QuanLyCuaHangDoAn.GUI
         private DataTable congThuc;
         private string cheDo = "";
         private string maNLCu = "";
+        private bool choDongBo;
+        private string hanhDongChoDongBo;
 
         public frmCongThuc()
         {
@@ -48,6 +49,11 @@ namespace QuanLyCuaHangDoAn.GUI
             cboNguyenLieu.Name = "cboNguyenLieu";
             txtSoLuong.Name = "txtSoLuong";
             dgvCongThuc.Name = "dgvCongThuc";
+            btnThem.Name = "btnThem";
+            btnSua.Name = "btnSua";
+            btnXoa.Name = "btnXoa";
+            btnLuu.Name = "btnLuu";
+            btnHuy.Name = "btnHuy";
             cboMonAn.DropDownStyle = ComboBoxStyle.DropDownList;
             cboNguyenLieu.DropDownStyle = ComboBoxStyle.DropDownList;
             cboMonAn.Dock = DockStyle.Fill;
@@ -97,6 +103,7 @@ foreach (Button btn in new[] { btnThem, btnSua, btnXoa, btnLuu, btnHuy })
 
             Controls.Add(split);
             Controls.Add(GiaoDien.TaoTieuDe("CÔNG THỨC MÓN"));
+            CapNhatTrangThaiNut();
         }
 
         private static void ThemTruong(TableLayoutPanel bang, string nhan, Control control, int dong)
@@ -105,7 +112,13 @@ foreach (Button btn in new[] { btnThem, btnSua, btnXoa, btnLuu, btnHuy })
             panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 26));
             panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
             control.Margin = new Padding(0, 2, 0, 6);
-            panel.Controls.Add(new Label { Text = nhan, Dock = DockStyle.Fill, TextAlign = ContentAlignment.BottomLeft }, 0, 0);
+            panel.Controls.Add(new Label
+            {
+                Name = "lbl" + control.Name.Substring(3),
+                Text = nhan,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.BottomLeft
+            }, 0, 0);
             panel.Controls.Add(control, 0, 1);
             bang.Controls.Add(panel, 0, dong);
         }
@@ -182,6 +195,7 @@ foreach (Button btn in new[] { btnThem, btnSua, btnXoa, btnLuu, btnHuy })
                 { "DVT", "Đơn vị tính" }, { "SoLuong", "Số lượng / phần" }
             });
             dgvCongThuc.BorderStyle = BorderStyle.FixedSingle;
+            CapNhatTrangThaiNut();
         }
 
         private void cboMonAn_SelectedIndexChanged(object sender, EventArgs e)
@@ -195,37 +209,62 @@ foreach (Button btn in new[] { btnThem, btnSua, btnXoa, btnLuu, btnHuy })
             maNLCu = Convert.ToString(dgvCongThuc.CurrentRow.Cells["MaNL"].Value);
             cboNguyenLieu.SelectedValue = maNLCu;
             txtSoLuong.Text = Convert.ToString(dgvCongThuc.CurrentRow.Cells["SoLuong"].Value, CultureInfo.InvariantCulture);
+            CapNhatTrangThaiNut();
         }
 
         private void btnThem_Click(object sender, EventArgs e)
         {
-            cheDo = "them"; maNLCu = ""; txtSoLuong.Clear(); cboNguyenLieu.SelectedIndex = -1; txtSoLuong.Focus();
+            if (choDongBo)
+                return;
+            cheDo = "them";
+            maNLCu = "";
+            txtSoLuong.Clear();
+            cboNguyenLieu.SelectedIndex = -1;
+            CapNhatTrangThaiNut();
+            txtSoLuong.Focus();
         }
 
         private void btnSua_Click(object sender, EventArgs e)
         {
+            if (choDongBo)
+                return;
             if (dgvCongThuc.CurrentRow == null) { BaoLoi("Vui lòng chọn công thức cần sửa."); return; }
-            cheDo = "sua"; maNLCu = Convert.ToString(dgvCongThuc.CurrentRow.Cells["MaNL"].Value); txtSoLuong.Focus();
+            cheDo = "sua";
+            maNLCu = Convert.ToString(dgvCongThuc.CurrentRow.Cells["MaNL"].Value);
+            CapNhatTrangThaiNut();
+            txtSoLuong.Focus();
         }
 
         private void btnXoa_Click(object sender, EventArgs e)
         {
+            if (choDongBo)
+                return;
             if (dgvCongThuc.CurrentRow == null) { BaoLoi("Vui lòng chọn công thức cần xóa."); return; }
+            if (cboMonAn.SelectedValue == null) { BaoLoi("Vui lòng chọn món ăn cần sửa."); return; }
             string maMon = cboMonAn.SelectedValue.ToString();
             string maNL = Convert.ToString(dgvCongThuc.CurrentRow.Cells["MaNL"].Value);
             if (MessageBox.Show("Bạn có chắc muốn xóa nguyên liệu này khỏi công thức?", "Xác nhận xóa",
                 MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
             try
             {
-                ThucThi("DELETE FROM CongThuc WHERE MaMon = @MaMon AND MaNL = @MaNL",
-                    new Action<SqlCommand>(cmd => { cmd.Parameters.Add("@MaMon", SqlDbType.NVarChar, 10).Value = maMon; cmd.Parameters.Add("@MaNL", SqlDbType.NVarChar, 10).Value = maNL; }));
-                TaiDuLieu();
+                if (fx.Xoa("CongThuc.xml", new Dictionary<string, string>
+                    {
+                        { "MaMon", maMon },
+                        { "MaNL", maNL }
+                    }) == 0)
+                    throw new InvalidOperationException("Không tìm thấy dòng công thức cần xóa trong XML.");
+                BatDauDongBo("xóa công thức");
             }
             catch (Exception ex) { HienLoi("Không thể xóa công thức", ex); }
         }
 
         private void btnLuu_Click(object sender, EventArgs e)
         {
+            if (choDongBo)
+            {
+                ThuDongBo();
+                return;
+            }
             if (cheDo == "") { BaoLoi("Vui lòng chọn Thêm hoặc Sửa trước khi lưu."); return; }
             if (cboMonAn.SelectedValue == null || cboNguyenLieu.SelectedValue == null) { BaoLoi("Vui lòng chọn món ăn và nguyên liệu."); return; }
             decimal soLuong;
@@ -234,33 +273,111 @@ foreach (Button btn in new[] { btnThem, btnSua, btnXoa, btnLuu, btnHuy })
             { BaoLoi("Số lượng định mức phải là số thực lớn hơn 0."); return; }
             string maMon = cboMonAn.SelectedValue.ToString();
             string maNL = cboNguyenLieu.SelectedValue.ToString();
-            if (cheDo == "them" && CoNguyenLieu(maMon, maNL)) { BaoLoi("Nguyên liệu đã có trong công thức. Hãy dùng nút Sửa để thay đổi số lượng."); return; }
+            if (CoNguyenLieu(maMon, maNL, cheDo == "sua" ? maNLCu : null))
+            { BaoLoi("Nguyên liệu đã có trong công thức. Hãy dùng nút Sửa để thay đổi số lượng."); return; }
             try
             {
                 if (cheDo == "them")
-                    ThucThi("INSERT INTO CongThuc (MaMon, MaNL, SoLuong) VALUES (@MaMon, @MaNL, @SoLuong)", cmd => GanThamSo(cmd, maMon, maNL, soLuong));
+                    fx.Them("CongThuc.xml", "CongThuc", TaoGiaTriCongThuc(maMon, maNL, soLuong));
                 else
-                    ThucThi("UPDATE CongThuc SET MaNL = @MaNLMoi, SoLuong = @SoLuong WHERE MaMon = @MaMon AND MaNL = @MaNLCu", cmd =>
-                    {
-                        cmd.Parameters.Add("@MaMon", SqlDbType.NVarChar, 10).Value = maMon;
-                        cmd.Parameters.Add("@MaNLCu", SqlDbType.NVarChar, 10).Value = maNLCu;
-                        cmd.Parameters.Add("@MaNLMoi", SqlDbType.NVarChar, 10).Value = maNL;
-                        GanDecimal(cmd, soLuong);
-                    });
-                TaiDuLieu();
+                {
+                    if (fx.Sua("CongThuc.xml",
+                        new Dictionary<string, string> { { "MaMon", maMon }, { "MaNL", maNLCu } },
+                        new Dictionary<string, string>
+                        {
+                            { "MaNL", maNL },
+                            { "SoLuong", soLuong.ToString(CultureInfo.InvariantCulture) }
+                        }) == 0)
+                        throw new InvalidOperationException("Không tìm thấy dòng công thức cần sửa trong XML.");
+                }
+                BatDauDongBo(cheDo == "them" ? "thêm công thức" : "sửa công thức");
             }
-            catch (SqlException ex) when (ex.Number == 2627 || ex.Number == 2601) { BaoLoi("Nguyên liệu đã có trong công thức. Hãy dùng nút Sửa."); }
             catch (Exception ex) { HienLoi("Không thể lưu công thức", ex); }
         }
 
-        private void btnHuy_Click(object sender, EventArgs e) { cheDo = ""; maNLCu = ""; HienThiCongThuc(); }
-        private bool CoNguyenLieu(string maMon, string maNL) { return congThuc.Select("MaMon = '" + maMon + "' AND MaNL = '" + maNL + "'").Length > 0; }
-        private static void GanThamSo(SqlCommand cmd, string maMon, string maNL, decimal soLuong) { cmd.Parameters.Add("@MaMon", SqlDbType.NVarChar, 10).Value = maMon; cmd.Parameters.Add("@MaNL", SqlDbType.NVarChar, 10).Value = maNL; GanDecimal(cmd, soLuong); }
-        private static void GanDecimal(SqlCommand cmd, decimal value) { var p = cmd.Parameters.Add("@SoLuong", SqlDbType.Decimal); p.Precision = 18; p.Scale = 3; p.Value = value; }
-        private static void ThucThi(string sql, Action<SqlCommand> ganThamSo)
+        private void btnHuy_Click(object sender, EventArgs e)
         {
-            using (var conn = new SqlConnection(FileXml.ChuoiKetNoi)) using (var cmd = new SqlCommand(sql, conn)) { ganThamSo(cmd); conn.Open(); cmd.ExecuteNonQuery(); }
+            if (choDongBo)
+                return;
+            cheDo = "";
+            maNLCu = "";
+            txtSoLuong.Clear();
+            HienThiCongThuc();
+            CapNhatTrangThaiNut();
         }
+
+        private bool CoNguyenLieu(string maMon, string maNL, string maNLBoQua = null)
+        {
+            if (congThuc == null)
+                return false;
+            foreach (DataRow dong in congThuc.Rows)
+            {
+                if (Convert.ToString(dong["MaMon"]) == maMon
+                    && Convert.ToString(dong["MaNL"]) == maNL
+                    && Convert.ToString(dong["MaNL"]) != maNLBoQua)
+                    return true;
+            }
+            return false;
+        }
+
+        private static IDictionary<string, string> TaoGiaTriCongThuc(string maMon, string maNL, decimal soLuong)
+        {
+            string[] thuTuCot = { "MaMon", "MaNL", "SoLuong" };
+            var giaTri = new SortedDictionary<string, string>(Comparer<string>.Create((a, b) =>
+                Array.IndexOf(thuTuCot, a).CompareTo(Array.IndexOf(thuTuCot, b))));
+            giaTri.Add("MaMon", maMon);
+            giaTri.Add("MaNL", maNL);
+            giaTri.Add("SoLuong", soLuong.ToString(CultureInfo.InvariantCulture));
+            return giaTri;
+        }
+
+        private void BatDauDongBo(string hanhDong)
+        {
+            choDongBo = true;
+            hanhDongChoDongBo = hanhDong;
+            CapNhatTrangThaiNut();
+            ThuDongBo();
+        }
+
+        private void ThuDongBo()
+        {
+            try
+            {
+                fx.CapNhatDb("CongThuc", "CongThuc.xml");
+            }
+            catch (Exception ex)
+            {
+                CapNhatTrangThaiNut();
+                HienLoi("XML đã thay đổi nhưng chưa đồng bộ được công thức vào CSDL. Nhấn Đồng bộ để thử lại", ex);
+                return;
+            }
+
+            choDongBo = false;
+            hanhDongChoDongBo = null;
+            cheDo = "";
+            maNLCu = "";
+            try { TaiDuLieu(); }
+            catch (Exception ex) { HienLoi("Công thức đã đồng bộ nhưng không thể tải lại dữ liệu", ex); }
+            CapNhatTrangThaiNut();
+        }
+
+        private void CapNhatTrangThaiNut()
+        {
+            bool coTheChinhSua = !choDongBo && cheDo != "";
+            bool binhThuong = !choDongBo && cheDo == "";
+            cboMonAn.Enabled = binhThuong;
+            cboNguyenLieu.Enabled = coTheChinhSua;
+            txtSoLuong.ReadOnly = !coTheChinhSua;
+            dgvCongThuc.Enabled = binhThuong;
+            btnThem.Enabled = binhThuong && cboMonAn.SelectedValue != null;
+            btnSua.Enabled = binhThuong && dgvCongThuc.CurrentRow != null;
+            btnXoa.Enabled = binhThuong && dgvCongThuc.CurrentRow != null;
+            btnLuu.Enabled = coTheChinhSua || choDongBo;
+            btnHuy.Enabled = coTheChinhSua;
+            btnLuu.Text = choDongBo ? "Đồng bộ" : "Lưu";
+            Text = choDongBo ? "Quản lý công thức món - chờ đồng bộ " + hanhDongChoDongBo : "Quản lý công thức món";
+        }
+
         private static void BaoLoi(string noiDung) { MessageBox.Show(noiDung, "Dữ liệu không hợp lệ", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
         private static void HienLoi(string noiDung, Exception ex) { MessageBox.Show(noiDung + ":\n" + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error); }
     }
