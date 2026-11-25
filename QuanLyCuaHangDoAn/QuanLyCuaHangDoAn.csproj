@@ -64,6 +64,12 @@
     <Compile Include="GUI\frmHoaDon.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="GUI\frmKhachHang.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="GUI\frmKhachHang.Designer.cs">
+      <DependentUpon>frmKhachHang.cs</DependentUpon>
+    </Compile>
     <Compile Include="GUI\frmMonAn.cs">
       <SubType>Form</SubType>
     </Compile>
