@@ -76,6 +76,9 @@
     <Compile Include="GUI\frmNguyenLieu.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="GUI\frmPhieuNhap.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="GUI\frmCongThuc.cs">
       <SubType>Form</SubType>
     </Compile>

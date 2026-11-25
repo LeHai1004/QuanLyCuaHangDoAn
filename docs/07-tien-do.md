@@ -14,7 +14,7 @@ Mỗi người tự cập nhật task của mình. Trạng thái: Chưa bắt đ
 | T9 | Duy | Chờ review | feature/duy-khachhang | - | Đã hoàn thành nghiệp vụ KhachHang (PhanTramGiam, CongDiem, tự nâng hạng, an toàn ngoại lệ, dùng SqlParameter), giao diện frmKhachHang CRUD, tìm kiếm theo SĐT, tự sinh mã KH, kiểm tra trùng SĐT, xác nhận xóa và đồng bộ XML với SQL Server |
 | T10 | Duy | Chờ review | feature/duy-nguyenlieu | - | Đã tạo frmNguyenLieu và frmNhaCungCap: CRUD đầy đủ, tự sinh mã NL/NCC, phân quyền Admin, kiểm tra khóa ngoại trước khi xóa, cảnh báo nguyên liệu sắp hết (tô đỏ TonKho <= DinhMuc), chống lỗi SplitContainer scale 125% và đồng bộ hai chiều XML với SQL Server |
 | T11 | Duy | Chờ review | feature/duy-kho | - | Hoàn thiện Kho thông minh: kiểm tra đủ nguyên liệu, trừ kho theo hóa đơn trong transaction, tự cập nhật trạng thái món, cảnh báo tồn kho; thêm frmCongThuc CRUD và đồng bộ CongThuc.xml |
-| T12 | Duy | Chưa bắt đầu | - | - | Chờ T10 |
+| T12 | Duy | Chờ review | feature/duy-phieunhap | - | Hoàn thiện frmPhieuNhap: lập phiếu nhập, thêm/xóa chi tiết, transaction cập nhật tồn kho, tự mở bán lại món khi đủ nguyên liệu và đồng bộ các XML liên quan |
 | T13 | Duy | Chưa bắt đầu | - | - | Chờ T3 |
 | T14 | Quốc | Chờ review | feature/quoc-thongke | - | Đã tạo frmThongKe: 2 DateTimePicker lấy đến hết ngày cuối, chỉ tính HĐ Đã thanh toán, truy vấn SQL dùng SqlParameter; hiển thị tổng doanh thu, số HĐ, doanh thu TB, bảng doanh thu theo ngày, top 5 món bán chạy kèm biểu đồ cột DataVisualization |
 | T15 | Cả nhóm | Chưa bắt đầu | - | - | Sau khi xong tất cả |

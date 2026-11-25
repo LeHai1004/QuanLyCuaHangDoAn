@@ -224,6 +224,44 @@ namespace QuanLyCuaHangDoAn
             return ketQua;
         }
 
+        /// <summary>
+        /// Cap nhat lai trang thai cac mon dung nguyen lieu vua nhap.
+        /// Phuong thuc nay dung lai ket noi va transaction cua nghiep vu nhap kho.
+        /// </summary>
+        public static void CapNhatTrangThaiMonAn(SqlConnection conn, SqlTransaction tran, IEnumerable<string> maNguyenLieu)
+        {
+            if (conn == null || tran == null || maNguyenLieu == null) return;
+
+            var maMonCanKiemTra = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (string maNL in maNguyenLieu)
+            {
+                if (string.IsNullOrWhiteSpace(maNL)) continue;
+                using (var cmd = new SqlCommand(
+                    "SELECT DISTINCT MaMon FROM CongThuc WHERE MaNL = @MaNL", conn, tran))
+                {
+                    cmd.Parameters.Add("@MaNL", SqlDbType.NVarChar, 10).Value = maNL.Trim();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                            maMonCanKiemTra.Add(Convert.ToString(reader["MaMon"]));
+                    }
+                }
+            }
+
+            foreach (string maMon in maMonCanKiemTra)
+            {
+                using (var cmd = new SqlCommand(
+                    "UPDATE MonAn SET TrangThai = N'Còn bán' " +
+                    "WHERE MaMon = @MaMon AND TrangThai = N'Hết' AND NOT EXISTS (" +
+                    "SELECT 1 FROM CongThuc c LEFT JOIN NguyenLieu n ON n.MaNL = c.MaNL " +
+                    "WHERE c.MaMon = @MaMon AND ISNULL(n.TonKho, 0) < c.SoLuong)", conn, tran))
+                {
+                    cmd.Parameters.Add("@MaMon", SqlDbType.NVarChar, 10).Value = maMon;
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
         private static void DongBoXmlKho()
         {
             var fx = new FileXml();
