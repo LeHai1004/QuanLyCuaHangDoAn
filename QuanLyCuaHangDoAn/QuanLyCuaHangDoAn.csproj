@@ -73,6 +73,12 @@
     <Compile Include="GUI\frmMonAn.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="GUI\frmNguyenLieu.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="GUI\frmNhaCungCap.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="GUI\frmOrder.cs">
       <SubType>Form</SubType>
     </Compile>
