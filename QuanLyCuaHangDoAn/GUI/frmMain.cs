@@ -175,6 +175,36 @@ namespace QuanLyCuaHangDoAn.GUI
                 MoForm(new frmOrder());
                 return;
             }
+            if (muc.Text == "Khách hàng")
+            {
+                MoForm(new frmKhachHang());
+                return;
+            }
+            if (muc.Text == "Nguyên liệu")
+            {
+                MoForm(new frmNguyenLieu());
+                return;
+            }
+            if (muc.Text == "Nhà cung cấp")
+            {
+                MoForm(new frmNhaCungCap());
+                return;
+            }
+            if (muc.Text == "Công thức món")
+            {
+                MoForm(new frmCongThuc());
+                return;
+            }
+            if (muc.Text == "Phiếu nhập")
+            {
+                MoForm(new frmPhieuNhap());
+                return;
+            }
+            if (muc.Text == "Nhập/xuất XML")
+            {
+                MoForm(new frmNhapXml());
+                return;
+            }
             MessageBox.Show("Chức năng \"" + muc.Text + "\" đang được phát triển.", "Thông báo",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
