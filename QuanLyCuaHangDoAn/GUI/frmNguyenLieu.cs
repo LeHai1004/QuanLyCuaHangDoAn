@@ -153,6 +153,7 @@ namespace QuanLyCuaHangDoAn.GUI
             panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 26));
             panel.Controls.Add(new Label
             {
+                Name = "lbl" + control.Name.Substring(3),
                 Text = nhan,
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleLeft,
@@ -182,7 +183,7 @@ namespace QuanLyCuaHangDoAn.GUI
 
             try
             {
-                if (PhienDangNhap.IsLoggedIn && PhienDangNhap.ChucVu != "Admin")
+                if (!PhienDangNhap.IsLoggedIn || PhienDangNhap.ChucVu != "Admin")
                 {
                     MessageBox.Show("Chức năng chỉ dành cho quản trị viên (Admin).", "Từ chối",
                         MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -240,18 +241,24 @@ namespace QuanLyCuaHangDoAn.GUI
             object valTonKho = dong.Cells["TonKho"].Value;
             object valDinhMuc = dong.Cells["DinhMuc"].Value;
 
-            if (ThuLaySo(valTonKho, out decimal tonKho) && ThuLaySo(valDinhMuc, out decimal dinhMuc))
+            bool canhBao = ThuLaySo(valTonKho, out decimal tonKho)
+                && ThuLaySo(valDinhMuc, out decimal dinhMuc)
+                && tonKho <= dinhMuc;
+            if (!canhBao)
             {
-                if (tonKho <= dinhMuc)
-                {
-                    // Cảnh báo sắp hết: nền đỏ nhạt, chữ đậm màu đỏ
-                    dong.DefaultCellStyle.BackColor = Color.FromArgb(255, 230, 230);
-                    dong.DefaultCellStyle.ForeColor = GiaoDien.MauDo;
-                    dong.DefaultCellStyle.Font = GiaoDien.FontDam;
-                    dong.DefaultCellStyle.SelectionBackColor = Color.FromArgb(235, 90, 80);
-                    dong.DefaultCellStyle.SelectionForeColor = Color.White;
-                }
+                dong.DefaultCellStyle.BackColor = Color.Empty;
+                dong.DefaultCellStyle.ForeColor = Color.Empty;
+                dong.DefaultCellStyle.Font = null;
+                dong.DefaultCellStyle.SelectionBackColor = Color.Empty;
+                dong.DefaultCellStyle.SelectionForeColor = Color.Empty;
+                return;
             }
+
+            dong.DefaultCellStyle.BackColor = Color.FromArgb(255, 230, 230);
+            dong.DefaultCellStyle.ForeColor = GiaoDien.MauDo;
+            dong.DefaultCellStyle.Font = GiaoDien.FontDam;
+            dong.DefaultCellStyle.SelectionBackColor = Color.FromArgb(235, 90, 80);
+            dong.DefaultCellStyle.SelectionForeColor = Color.White;
         }
 
         private static bool ThuLaySo(object giaTri, out decimal so)
@@ -502,6 +509,14 @@ namespace QuanLyCuaHangDoAn.GUI
             try
             {
                 fx.CapNhatDb(TenBang, TenFile);
+            }
+            catch (SqlException ex) when (ex.Number == 547 && hanhDongChoDongBo == "xóa nguyên liệu")
+            {
+                CapNhatTrangThaiNut();
+                MessageBox.Show(
+                    "Không thể xóa nguyên liệu vì đang được tham chiếu trong công thức món ăn hoặc chi tiết phiếu nhập. XML vẫn đang chờ đồng bộ; hãy xử lý các tham chiếu rồi nhấn Đồng bộ để thử lại.\r\n\r\n" + ex.Message,
+                    "Không thể xóa nguyên liệu", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
             }
             catch (Exception ex)
             {

@@ -149,6 +149,7 @@ namespace QuanLyCuaHangDoAn.GUI
             panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 26));
             panel.Controls.Add(new Label
             {
+                Name = "lbl" + control.Name.Substring(3),
                 Text = nhan,
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleLeft,
@@ -178,7 +179,7 @@ namespace QuanLyCuaHangDoAn.GUI
 
             try
             {
-                if (PhienDangNhap.IsLoggedIn && PhienDangNhap.ChucVu != "Admin")
+                if (!PhienDangNhap.IsLoggedIn || PhienDangNhap.ChucVu != "Admin")
                 {
                     MessageBox.Show("Chức năng chỉ dành cho quản trị viên (Admin).", "Từ chối",
                         MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -420,6 +421,14 @@ namespace QuanLyCuaHangDoAn.GUI
             try
             {
                 fx.CapNhatDb(TenBang, TenFile);
+            }
+            catch (SqlException ex) when (ex.Number == 547 && hanhDongChoDongBo == "xóa nhà cung cấp")
+            {
+                CapNhatTrangThaiNut();
+                MessageBox.Show(
+                    "Không thể xóa nhà cung cấp vì vẫn còn phiếu nhập tham chiếu đến nhà cung cấp này. XML vẫn đang chờ đồng bộ; hãy xử lý các tham chiếu rồi nhấn Đồng bộ để thử lại.\r\n\r\n" + ex.Message,
+                    "Không thể xóa nhà cung cấp", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
             }
             catch (Exception ex)
             {

@@ -186,6 +186,7 @@ namespace QuanLyCuaHangDoAn.GUI
             panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 26));
             panel.Controls.Add(new Label
             {
+                Name = "lbl" + control.Name.Substring(3),
                 Text = nhan,
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleLeft,
