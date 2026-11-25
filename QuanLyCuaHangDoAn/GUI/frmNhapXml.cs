@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.Windows.Forms;
 using QuanLyCuaHangDoAn.Class;
@@ -19,6 +20,10 @@ namespace QuanLyCuaHangDoAn.GUI
         private readonly DataGridView dgvPreview = new DataGridView();
         private string duongDanXmlDaChon = "";
         private DataTable duLieuXemTruoc;
+        private bool choDongBo;
+        private bool daNhapDuLieu;
+        private int soMonThemChoDongBo;
+        private List<string> maMonBoQuaChoDongBo = new List<string>();
 
         public frmNhapXml()
         {
@@ -83,9 +88,9 @@ namespace QuanLyCuaHangDoAn.GUI
             khuVuc.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             khuVuc.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
 
-            khuVuc.Controls.Add(TaoNhan("XUẤT THỰC ĐƠN"), 0, 0);
+            khuVuc.Controls.Add(TaoNhan("XUẤT THỰC ĐƠN", "lblTieuDeXuat"), 0, 0);
             khuVuc.Controls.Add(btnXuat, 0, 1);
-            khuVuc.Controls.Add(TaoNhan("KIỂM TRA FILE XML"), 0, 2);
+            khuVuc.Controls.Add(TaoNhan("KIỂM TRA FILE XML", "lblTieuDeKiemTra"), 0, 2);
             khuVuc.Controls.Add(btnChon, 0, 3);
             lblTrangThai.Text = "Chưa chọn file XML.";
             lblTrangThai.Dock = DockStyle.Fill;
@@ -95,6 +100,7 @@ namespace QuanLyCuaHangDoAn.GUI
             khuVuc.Controls.Add(btnNhap, 0, 5);
             khuVuc.Controls.Add(new Label
             {
+                Name = "lblGhiChuNhapXml",
                 Text = "Chỉ nhập file đã hợp lệ XSD và có mã danh mục tồn tại trong CSDL.",
                 Dock = DockStyle.Bottom,
                 AutoSize = false,
@@ -115,7 +121,7 @@ namespace QuanLyCuaHangDoAn.GUI
             };
             khuVuc.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
             khuVuc.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-            khuVuc.Controls.Add(TaoNhan("XEM TRƯỚC DỮ LIỆU MÓN ĂN"), 0, 0);
+            khuVuc.Controls.Add(TaoNhan("XEM TRƯỚC DỮ LIỆU MÓN ĂN", "lblTieuDeXemTruoc"), 0, 0);
             dgvPreview.Dock = DockStyle.Fill;
             dgvPreview.ReadOnly = true;
             dgvPreview.AllowUserToAddRows = false;
@@ -125,10 +131,11 @@ namespace QuanLyCuaHangDoAn.GUI
             return khuVuc;
         }
 
-        private static Label TaoNhan(string noiDung)
+        private static Label TaoNhan(string noiDung, string ten)
         {
             return new Label
             {
+                Name = ten,
                 Text = noiDung,
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleLeft,
@@ -149,6 +156,8 @@ namespace QuanLyCuaHangDoAn.GUI
 
         private void btnXuat_Click(object sender, EventArgs e)
         {
+            if (choDongBo)
+                return;
             try
             {
                 fx.TaoXml("SELECT MaMon, TenMon, MaDM, DonGia, DVT, TrangThai FROM MonAn", "MonAn", "MonAn.xml");
@@ -176,6 +185,8 @@ namespace QuanLyCuaHangDoAn.GUI
 
         private void btnChon_Click(object sender, EventArgs e)
         {
+            if (choDongBo)
+                return;
             using (var dialog = new OpenFileDialog())
             {
                 dialog.Title = "Chọn file thực đơn XML";
@@ -184,11 +195,12 @@ namespace QuanLyCuaHangDoAn.GUI
 
                 duongDanXmlDaChon = dialog.FileName;
                 duLieuXemTruoc = null;
+                daNhapDuLieu = false;
                 dgvPreview.DataSource = null;
-                btnNhap.Enabled = false;
+                CapNhatTrangThaiNut();
 
                 string loi;
-                bool hopLe = fx.KiemTraXsd(duongDanXmlDaChon, FileXml.DuongDan("MonAn.xsd"), out loi);
+                bool hopLe = fx.KiemTraXsd(duongDanXmlDaChon, "MonAn.xsd", out loi);
                 if (!hopLe)
                 {
                     lblTrangThai.Text = "File không hợp lệ XSD.";
@@ -201,14 +213,14 @@ namespace QuanLyCuaHangDoAn.GUI
                 {
                     duLieuXemTruoc = fx.HienThi(duongDanXmlDaChon);
                     HienThiXemTruoc(duLieuXemTruoc);
-                    btnNhap.Enabled = duLieuXemTruoc.Rows.Count > 0;
+                    CapNhatTrangThaiNut();
                     lblTrangThai.Text = "File hợp lệ XSD: " + duongDanXmlDaChon;
                     MessageBox.Show("File XML hợp lệ. Có thể nhấn Nhập vào hệ thống.", "Kiểm tra thành công",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 catch (Exception ex)
                 {
-                    btnNhap.Enabled = false;
+                    CapNhatTrangThaiNut();
                     HienLoi("File hợp lệ XSD nhưng không thể nạp dữ liệu xem trước", ex);
                 }
             }
@@ -228,6 +240,11 @@ namespace QuanLyCuaHangDoAn.GUI
 
         private void btnNhap_Click(object sender, EventArgs e)
         {
+            if (choDongBo)
+            {
+                ThuDongBo();
+                return;
+            }
             if (!PhienDangNhap.IsLoggedIn || PhienDangNhap.ChucVu != "Admin")
             {
                 MessageBox.Show("Bạn không có quyền nhập thực đơn XML.", "Từ chối",
@@ -239,25 +256,100 @@ namespace QuanLyCuaHangDoAn.GUI
                 BaoLoi("Vui lòng chọn và kiểm tra một file XML hợp lệ trước.");
                 return;
             }
-            if (!KiemTraDanhMuc(out string loiDanhMuc))
-            {
-                BaoLoi(loiDanhMuc);
-                return;
-            }
 
             try
             {
-                fx.CapNhatDb("MonAn", duongDanXmlDaChon);
+                if (!KiemTraDanhMuc(out string loiDanhMuc))
+                {
+                    BaoLoi(loiDanhMuc);
+                    return;
+                }
+
                 fx.TaoXml("SELECT * FROM MonAn", "MonAn", "MonAn.xml");
-                btnNhap.Enabled = false;
-                MessageBox.Show("Đã nhập thực đơn vào SQL Server và đồng bộ MonAn.xml.", "Thông báo",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-                lblTrangThai.Text = "Đã nhập thành công: " + duongDanXmlDaChon;
+                var maMonBoQua = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                int soMonThem = 0;
+                foreach (DataRow dong in duLieuXemTruoc.Rows)
+                {
+                    string maMon = Convert.ToString(dong["MaMon"]);
+                    if (fx.TonTai("MonAn.xml", "MaMon", maMon))
+                    {
+                        maMonBoQua.Add(maMon);
+                        continue;
+                    }
+
+                    fx.Them("MonAn.xml", "MonAn", TaoGiaTriMonAn(dong));
+                    soMonThem++;
+                }
+
+                daNhapDuLieu = true;
+                soMonThemChoDongBo = soMonThem;
+                maMonBoQuaChoDongBo = new List<string>(maMonBoQua);
+                if (soMonThem == 0)
+                {
+                    CapNhatTrangThaiNut();
+                    lblTrangThai.Text = "Không có món mới; các mã đã tồn tại được bỏ qua.";
+                    MessageBox.Show("Không có món mới để nhập. Mã đã tồn tại: " +
+                        string.Join(", ", maMonBoQuaChoDongBo), "Đã bỏ qua món trùng",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                choDongBo = true;
+                CapNhatTrangThaiNut();
+                ThuDongBo();
             }
             catch (Exception ex)
             {
                 HienLoi("Không thể nhập thực đơn XML vào hệ thống", ex);
             }
+        }
+
+        private static IDictionary<string, string> TaoGiaTriMonAn(DataRow dong)
+        {
+            string[] thuTuCot = { "MaMon", "TenMon", "MaDM", "DonGia", "DVT", "TrangThai" };
+            var giaTri = new SortedDictionary<string, string>(Comparer<string>.Create((a, b) =>
+                Array.IndexOf(thuTuCot, a).CompareTo(Array.IndexOf(thuTuCot, b))));
+            giaTri.Add("MaMon", Convert.ToString(dong["MaMon"]));
+            giaTri.Add("TenMon", Convert.ToString(dong["TenMon"]));
+            giaTri.Add("MaDM", Convert.ToString(dong["MaDM"]));
+            giaTri.Add("DonGia", Convert.ToDecimal(dong["DonGia"]).ToString("0", CultureInfo.InvariantCulture));
+            giaTri.Add("DVT", Convert.ToString(dong["DVT"]));
+            giaTri.Add("TrangThai", Convert.ToString(dong["TrangThai"]));
+            return giaTri;
+        }
+
+        private void ThuDongBo()
+        {
+            try
+            {
+                fx.CapNhatDb("MonAn", "MonAn.xml");
+                fx.TaoXml("SELECT * FROM MonAn", "MonAn", "MonAn.xml");
+            }
+            catch (Exception ex)
+            {
+                CapNhatTrangThaiNut();
+                lblTrangThai.Text = "Đồng bộ chưa hoàn tất; nhấn nút Đồng bộ lại để thử.";
+                HienLoi("XML đang chờ đồng bộ vào SQL Server. Nhấn Đồng bộ lại để thử tiếp", ex);
+                return;
+            }
+
+            choDongBo = false;
+            CapNhatTrangThaiNut();
+            lblTrangThai.Text = "Đã nhập thành công: " + duongDanXmlDaChon;
+            string thongTinBoQua = maMonBoQuaChoDongBo.Count == 0
+                ? ""
+                : "\nBỏ qua mã đã tồn tại: " + string.Join(", ", maMonBoQuaChoDongBo);
+            MessageBox.Show("Đã nhập " + soMonThemChoDongBo + " món vào SQL Server." + thongTinBoQua,
+                "Nhập thực đơn thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void CapNhatTrangThaiNut()
+        {
+            btnXuat.Enabled = !choDongBo;
+            btnChon.Enabled = !choDongBo;
+            btnNhap.Enabled = choDongBo
+                || (!daNhapDuLieu && duLieuXemTruoc != null && duLieuXemTruoc.Rows.Count > 0);
+            btnNhap.Text = choDongBo ? "Đồng bộ lại" : "Nhập vào hệ thống";
         }
 
         private bool KiemTraDanhMuc(out string loi)
@@ -266,7 +358,7 @@ namespace QuanLyCuaHangDoAn.GUI
             foreach (DataRow dong in duLieuXemTruoc.Rows)
                 maDanhMuc.Add(Convert.ToString(dong["MaDM"]));
 
-            var khongTonTai = new List<string>();
+            var maDanhMucTonTai = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             using (var conn = new SqlConnection(FileXml.ChuoiKetNoi))
             using (var cmd = new SqlCommand("SELECT COUNT(*) FROM DanhMuc WHERE MaDM = @MaDM", conn))
             {
@@ -276,17 +368,28 @@ namespace QuanLyCuaHangDoAn.GUI
                 {
                     cmd.Parameters["@MaDM"].Value = maDM;
                     if (Convert.ToInt32(cmd.ExecuteScalar()) == 0)
-                        khongTonTai.Add(maDM);
+                        continue;
+                    maDanhMucTonTai.Add(maDM);
                 }
             }
 
-            if (khongTonTai.Count == 0)
+            var dongSai = new List<string>();
+            for (int i = 0; i < duLieuXemTruoc.Rows.Count; i++)
             {
-                loi = "";
-                return true;
+                DataRow dong = duLieuXemTruoc.Rows[i];
+                string maDM = Convert.ToString(dong["MaDM"]);
+                if (!maDanhMucTonTai.Contains(maDM))
+                {
+                    dongSai.Add("Dòng món " + (i + 1) + " (" + Convert.ToString(dong["MaMon"]) +
+                        " - " + Convert.ToString(dong["TenMon"]) + "): mã danh mục " + maDM);
+                }
             }
-            loi = "Các mã danh mục sau chưa tồn tại trong SQL Server: " + string.Join(", ", khongTonTai) + ".\nKhông thể nhập thực đơn.";
-            return false;
+
+            loi = dongSai.Count == 0
+                ? ""
+                : "Các dòng sau tham chiếu mã danh mục chưa tồn tại trong SQL Server:\n" +
+                    string.Join("\n", dongSai) + "\nKhông thể nhập thực đơn.";
+            return dongSai.Count == 0;
         }
 
         private static void BaoLoi(string noiDung)
