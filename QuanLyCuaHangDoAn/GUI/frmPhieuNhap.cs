@@ -22,7 +22,7 @@ namespace QuanLyCuaHangDoAn.GUI
         private readonly TextBox txtMaPN = new TextBox();
         private readonly ComboBox cboNhaCungCap = new ComboBox();
         private readonly ComboBox cboNguyenLieu = new ComboBox();
-        private readonly DateTimePicker dtpNgayNhap = new DateTimePicker();
+        private readonly TextBox txtNgayNhap = new TextBox();
         private readonly TextBox txtSoLuong = new TextBox();
         private readonly TextBox txtDonGia = new TextBox();
         private readonly DataGridView dgvChiTietNhap = new DataGridView();
@@ -37,6 +37,8 @@ namespace QuanLyCuaHangDoAn.GUI
         private DataTable nhaCungCap;
         private DataTable nguyenLieu;
         private DataTable chiTietNhap;
+        private bool choDongBo;
+        private string maPNChoDongBo;
 
         public frmPhieuNhap()
         {
@@ -56,20 +58,22 @@ namespace QuanLyCuaHangDoAn.GUI
             txtMaPN.Name = "txtMaPN";
             cboNhaCungCap.Name = "cboNhaCungCap";
             cboNguyenLieu.Name = "cboNguyenLieu";
-            dtpNgayNhap.Name = "dtpNgayNhap";
+            txtNgayNhap.Name = "txtNgayNhap";
             txtSoLuong.Name = "txtSoLuong";
             txtDonGia.Name = "txtDonGia";
             dgvChiTietNhap.Name = "dgvChiTietNhap";
             dgvPhieuNhap.Name = "dgvPhieuNhap";
             dgvChiTietLichSu.Name = "dgvChiTietLichSu";
             lblTongTien.Name = "lblTongTien";
+            btnThemDong.Name = "btnThemDong";
+            btnXoaDong.Name = "btnXoaDong";
+            btnLuu.Name = "btnLuu";
+            btnHuy.Name = "btnHuy";
 
             txtMaPN.ReadOnly = true;
+            txtNgayNhap.ReadOnly = true;
             cboNhaCungCap.DropDownStyle = ComboBoxStyle.DropDownList;
             cboNguyenLieu.DropDownStyle = ComboBoxStyle.DropDownList;
-            dtpNgayNhap.Format = DateTimePickerFormat.Custom;
-            dtpNgayNhap.CustomFormat = "dd/MM/yyyy HH:mm";
-            dtpNgayNhap.Value = DateTime.Now;
 
             split.Panel1.Controls.Add(TaoKhuVucLapPhieu());
             split.Panel2.Controls.Add(TaoKhuVucLichSu());
@@ -100,7 +104,7 @@ namespace QuanLyCuaHangDoAn.GUI
 
             ThemTruong(khuVuc, "Mã phiếu nhập", txtMaPN, 0);
             ThemTruong(khuVuc, "Nhà cung cấp (*)", cboNhaCungCap, 1);
-            ThemTruong(khuVuc, "Ngày nhập", dtpNgayNhap, 2);
+            ThemTruong(khuVuc, "Ngày nhập", txtNgayNhap, 2);
             ThemTruong(khuVuc, "Nguyên liệu (*)", cboNguyenLieu, 3);
             ThemTruong(khuVuc, "Số lượng nhập (*)", txtSoLuong, 4);
             ThemTruong(khuVuc, "Đơn giá nhập (*)", txtDonGia, 5);
@@ -161,13 +165,13 @@ namespace QuanLyCuaHangDoAn.GUI
             khuVuc.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
             khuVuc.RowStyles.Add(new RowStyle(SizeType.Percent, 52));
 
-            khuVuc.Controls.Add(TaoNhan("LỊCH SỬ PHIẾU NHẬP"), 0, 0);
+            khuVuc.Controls.Add(TaoNhan("LỊCH SỬ PHIẾU NHẬP", "lblLichSuPhieuNhap"), 0, 0);
             dgvPhieuNhap.Dock = DockStyle.Fill;
             dgvPhieuNhap.ReadOnly = true;
             dgvPhieuNhap.AllowUserToAddRows = false;
             dgvPhieuNhap.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             khuVuc.Controls.Add(dgvPhieuNhap, 0, 1);
-            khuVuc.Controls.Add(TaoNhan("CHI TIẾT PHIẾU ĐANG CHỌN"), 0, 2);
+            khuVuc.Controls.Add(TaoNhan("CHI TIẾT PHIẾU ĐANG CHỌN", "lblChiTietLichSu"), 0, 2);
             dgvChiTietLichSu.Dock = DockStyle.Fill;
             dgvChiTietLichSu.ReadOnly = true;
             dgvChiTietLichSu.AllowUserToAddRows = false;
@@ -176,10 +180,11 @@ namespace QuanLyCuaHangDoAn.GUI
             return khuVuc;
         }
 
-        private static Label TaoNhan(string noiDung)
+        private static Label TaoNhan(string noiDung, string ten)
         {
             return new Label
             {
+                Name = ten,
                 Text = noiDung,
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleLeft,
@@ -203,6 +208,7 @@ namespace QuanLyCuaHangDoAn.GUI
             control.Margin = new Padding(0, 2, 0, 6);
             cum.Controls.Add(new Label
             {
+                Name = "lbl" + control.Name.Substring(3),
                 Text = nhan,
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.BottomLeft
@@ -220,7 +226,7 @@ namespace QuanLyCuaHangDoAn.GUI
                 split.SplitterDistance = 650;
             }
 
-            if (PhienDangNhap.IsLoggedIn && PhienDangNhap.ChucVu != "Admin")
+            if (!PhienDangNhap.IsLoggedIn || PhienDangNhap.ChucVu != "Admin")
             {
                 MessageBox.Show("Chức năng chỉ dành cho quản trị viên (Admin).", "Từ chối",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -255,6 +261,7 @@ namespace QuanLyCuaHangDoAn.GUI
             TaoChiTietNhap();
             TaoMaPhieuMoi();
             TaiLichSuPhieuNhap();
+            CapNhatTrangThaiNut();
         }
 
         private DataTable TaoBangNhaCungCapHienThi()
@@ -290,7 +297,7 @@ namespace QuanLyCuaHangDoAn.GUI
         private void TaoMaPhieuMoi()
         {
             txtMaPN.Text = fx.TaoMa("PN", "PhieuNhap.xml", "MaPN");
-            dtpNgayNhap.Value = DateTime.Now;
+            txtNgayNhap.Text = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
             cboNhaCungCap.SelectedIndex = -1;
             cboNguyenLieu.SelectedIndex = -1;
             txtSoLuong.Clear();
@@ -317,11 +324,13 @@ namespace QuanLyCuaHangDoAn.GUI
             decimal tong = 0m;
             if (chiTietNhap != null)
                 foreach (DataRow dong in chiTietNhap.Rows) tong += Convert.ToDecimal(dong["ThanhTien"]);
-            lblTongTien.Text = "Tổng tiền nhập: " + tong.ToString("#,##0", new CultureInfo("vi-VN")) + " đ";
+            lblTongTien.Text = "Tổng tiền nhập: " + tong.ToString("#,##0.##", new CultureInfo("vi-VN")) + " đ";
         }
 
         private void btnThemDong_Click(object sender, EventArgs e)
         {
+            if (choDongBo)
+                return;
             if (cboNguyenLieu.SelectedValue == null)
             {
                 BaoLoi("Vui lòng chọn nguyên liệu.");
@@ -362,15 +371,25 @@ namespace QuanLyCuaHangDoAn.GUI
             dongMoi["MaNL"] = maNL;
             dongMoi["TenNL"] = nguyenLieuChon["TenNL"];
             dongMoi["DVT"] = nguyenLieuChon["DVT"];
-            dongMoi["SoLuong"] = decimal.Round(soLuong, 2);
-            dongMoi["DonGia"] = decimal.Round(donGia, 0);
-            dongMoi["ThanhTien"] = decimal.Round(soLuong * donGia, 0);
+            decimal soLuongLuu = decimal.Round(soLuong, 2, MidpointRounding.AwayFromZero);
+            decimal donGiaLuu = decimal.Round(donGia, 0, MidpointRounding.AwayFromZero);
+            if (soLuongLuu <= 0m)
+            {
+                BaoLoi("Số lượng sau khi làm tròn theo dữ liệu lưu phải ít nhất là 0,01.");
+                txtSoLuong.Focus();
+                return;
+            }
+            dongMoi["SoLuong"] = soLuongLuu;
+            dongMoi["DonGia"] = donGiaLuu;
+            dongMoi["ThanhTien"] = soLuongLuu * donGiaLuu;
             chiTietNhap.Rows.Add(dongMoi);
             HienThiChiTietNhap();
         }
 
         private void btnXoaDong_Click(object sender, EventArgs e)
         {
+            if (choDongBo)
+                return;
             if (dgvChiTietNhap.CurrentRow == null || dgvChiTietNhap.CurrentRow.Index < 0)
             {
                 BaoLoi("Vui lòng chọn dòng nguyên liệu cần xóa.");
@@ -384,12 +403,19 @@ namespace QuanLyCuaHangDoAn.GUI
 
         private void btnHuy_Click(object sender, EventArgs e)
         {
+            if (choDongBo)
+                return;
             TaoChiTietNhap();
             TaoMaPhieuMoi();
         }
 
         private void btnLuu_Click(object sender, EventArgs e)
         {
+            if (choDongBo)
+            {
+                ThuDongBo();
+                return;
+            }
             if (cboNhaCungCap.SelectedValue == null)
             {
                 BaoLoi("Vui lòng chọn nhà cung cấp.");
@@ -413,6 +439,8 @@ namespace QuanLyCuaHangDoAn.GUI
             {
                 string maPN = txtMaPN.Text.Trim();
                 string maNCC = cboNhaCungCap.SelectedValue.ToString();
+                DateTime ngayNhap = DateTime.Now;
+                txtNgayNhap.Text = ngayNhap.ToString("dd/MM/yyyy HH:mm");
                 using (var conn = new SqlConnection(FileXml.ChuoiKetNoi))
                 {
                     conn.Open();
@@ -420,7 +448,7 @@ namespace QuanLyCuaHangDoAn.GUI
                     {
                         try
                         {
-                            string maNV = LayMaNhanVien(conn, tran);
+                            string maNV = LayMaNhanVien();
                             using (var cmd = new SqlCommand(
                                 "INSERT INTO PhieuNhap (MaPN, MaNCC, MaNV, NgayNhap) " +
                                 "VALUES (@MaPN, @MaNCC, @MaNV, @NgayNhap)", conn, tran))
@@ -428,7 +456,7 @@ namespace QuanLyCuaHangDoAn.GUI
                                 cmd.Parameters.Add("@MaPN", SqlDbType.NVarChar, 10).Value = maPN;
                                 cmd.Parameters.Add("@MaNCC", SqlDbType.NVarChar, 10).Value = maNCC;
                                 cmd.Parameters.Add("@MaNV", SqlDbType.NVarChar, 10).Value = maNV;
-                                cmd.Parameters.Add("@NgayNhap", SqlDbType.DateTime).Value = dtpNgayNhap.Value;
+                                cmd.Parameters.Add("@NgayNhap", SqlDbType.DateTime).Value = ngayNhap;
                                 cmd.ExecuteNonQuery();
                             }
 
@@ -463,23 +491,16 @@ namespace QuanLyCuaHangDoAn.GUI
                         }
                         catch
                         {
-                            try { tran.Rollback(); } catch { }
+                            tran.Rollback();
                             throw;
                         }
                     }
                 }
 
-                try
-                {
-                    DongBoXmlSauKhiLuu();
-                }
-                catch (Exception ex)
-                {
-                    HienLoi("Đã lưu phiếu nhưng chưa đồng bộ được XML", ex);
-                }
-                MessageBox.Show("Đã lưu phiếu nhập và cập nhật tồn kho.", "Thông báo",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-                TaiDuLieu();
+                choDongBo = true;
+                maPNChoDongBo = maPN;
+                CapNhatTrangThaiNut();
+                ThuDongBo();
             }
             catch (SqlException ex) when (ex.Number == 2627 || ex.Number == 2601)
             {
@@ -491,18 +512,11 @@ namespace QuanLyCuaHangDoAn.GUI
             }
         }
 
-        private string LayMaNhanVien(SqlConnection conn, SqlTransaction tran)
+        private string LayMaNhanVien()
         {
-            if (PhienDangNhap.IsLoggedIn && !string.IsNullOrWhiteSpace(PhienDangNhap.MaNV))
-                return PhienDangNhap.MaNV.Trim();
-            using (var cmd = new SqlCommand(
-                "SELECT TOP 1 MaNV FROM NhanVien WHERE ChucVu = N'Admin' ORDER BY MaNV", conn, tran))
-            {
-                object ketQua = cmd.ExecuteScalar();
-                if (ketQua == null || ketQua == DBNull.Value)
-                    throw new InvalidOperationException("Không tìm thấy nhân viên Admin để lập phiếu nhập.");
-                return Convert.ToString(ketQua);
-            }
+            if (!PhienDangNhap.IsLoggedIn || string.IsNullOrWhiteSpace(PhienDangNhap.MaNV))
+                throw new InvalidOperationException("Không xác định được nhân viên đang đăng nhập để lập phiếu nhập.");
+            return PhienDangNhap.MaNV.Trim();
         }
 
         private void DongBoXmlSauKhiLuu()
@@ -511,6 +525,52 @@ namespace QuanLyCuaHangDoAn.GUI
             fx.TaoXml("SELECT * FROM ChiTietPhieuNhap", "ChiTietPhieuNhap", "ChiTietPhieuNhap.xml");
             fx.TaoXml("SELECT * FROM NguyenLieu", "NguyenLieu", "NguyenLieu.xml");
             fx.TaoXml("SELECT * FROM MonAn", "MonAn", "MonAn.xml");
+            fx.CapNhatDb("PhieuNhap", "PhieuNhap.xml");
+            fx.CapNhatDb("ChiTietPhieuNhap", "ChiTietPhieuNhap.xml");
+        }
+
+        private void ThuDongBo()
+        {
+            try
+            {
+                DongBoXmlSauKhiLuu();
+            }
+            catch (Exception ex)
+            {
+                CapNhatTrangThaiNut();
+                HienLoi("Phiếu " + maPNChoDongBo + " đã ghi vào CSDL nhưng XML chưa đồng bộ. Nhấn Đồng bộ để thử lại", ex);
+                return;
+            }
+
+            choDongBo = false;
+            string maPNDaLuu = maPNChoDongBo;
+            maPNChoDongBo = null;
+            try
+            {
+                TaiDuLieu();
+            }
+            catch (Exception ex)
+            {
+                HienLoi("Phiếu đã đồng bộ nhưng không thể tải lại dữ liệu", ex);
+            }
+            CapNhatTrangThaiNut();
+            MessageBox.Show("Đã lưu phiếu nhập " + maPNDaLuu + " và cập nhật tồn kho.", "Thông báo",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void CapNhatTrangThaiNut()
+        {
+            bool choPhepThaoTac = !choDongBo;
+            cboNhaCungCap.Enabled = choPhepThaoTac;
+            cboNguyenLieu.Enabled = choPhepThaoTac;
+            txtNgayNhap.ReadOnly = true;
+            txtSoLuong.Enabled = choPhepThaoTac;
+            txtDonGia.Enabled = choPhepThaoTac;
+            btnThemDong.Enabled = choPhepThaoTac;
+            btnXoaDong.Enabled = choPhepThaoTac;
+            btnHuy.Enabled = choPhepThaoTac;
+            btnLuu.Enabled = true;
+            btnLuu.Text = choDongBo ? "Đồng bộ" : "Lưu phiếu";
         }
 
         private void TaiLichSuPhieuNhap()
