@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<DuLieu>
+  <MonAn>
+    <MaMon>MA003</MaMon>
+    <TenMon>Cơm gà</TenMon>
+    <MaDM>DM001</MaDM>
+    <DonGia>-5000</DonGia>
+    <DVT>đĩa</DVT>
+    <TrangThai>Còn bán</TrangThai>
+  </MonAn>
+</DuLieu>

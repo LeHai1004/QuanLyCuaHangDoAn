@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE DuLieu [
+  <!ENTITY tenMon "Phở bò"> 
+]>
+<DuLieu>
+  <MonAn>
+    <MaMon>MA005</MaMon>
+    <TenMon>&tenMon;</TenMon>
+    <MaDM>DM001</MaDM>
+    <DonGia>55000</DonGia>
+    <DVT>tô</DVT>
+    <TrangThai>Còn bán</TrangThai>
+  </MonAn>
+</DuLieu>

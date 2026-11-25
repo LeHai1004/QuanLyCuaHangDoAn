@@ -254,33 +254,45 @@ namespace QuanLyCuaHangDoAn
         public bool KiemTraXsd(string tenXml, string tenXsd, out string loi)
         {
             var sb = new StringBuilder();
-            var settings = new XmlReaderSettings
-            {
-                DtdProcessing = DtdProcessing.Prohibit, // chan XXE khi nhap file XML tu ben ngoai
-                XmlResolver = null,
-                ValidationType = ValidationType.Schema
-            };
-            settings.ValidationFlags |= XmlSchemaValidationFlags.ReportValidationWarnings;
-
-            var xsdSettings = new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null };
-            using (XmlReader xs = XmlReader.Create(DuongDan(tenXsd), xsdSettings))
-                settings.Schemas.Add(null, xs);
-
-            settings.ValidationEventHandler += (s, e) =>
-            {
-                int dong = e.Exception != null ? e.Exception.LineNumber : 0;
-                int cot = e.Exception != null ? e.Exception.LinePosition : 0;
-                sb.AppendLine("Dong " + dong + ", cot " + cot + ": " + e.Message);
-            };
-
             try
             {
+                var settings = new XmlReaderSettings
+                {
+                    DtdProcessing = DtdProcessing.Prohibit, // chan XXE khi nhap XML tu ben ngoai
+                    XmlResolver = null,
+                    ValidationType = ValidationType.Schema
+                };
+                settings.ValidationFlags |= XmlSchemaValidationFlags.ReportValidationWarnings;
+                settings.ValidationEventHandler += (s, e) =>
+                {
+                    int dong = e.Exception != null ? e.Exception.LineNumber : 0;
+                    int cot = e.Exception != null ? e.Exception.LinePosition : 0;
+                    sb.AppendLine("Dong " + dong + ", cot " + cot + ": " + e.Message);
+                };
+
+                var xsdSettings = new XmlReaderSettings
+                {
+                    DtdProcessing = DtdProcessing.Prohibit,
+                    XmlResolver = null
+                };
+                using (XmlReader xs = XmlReader.Create(DuongDan(tenXsd), xsdSettings))
+                    settings.Schemas.Add(null, xs);
                 using (XmlReader r = XmlReader.Create(DuongDan(tenXml), settings))
                     while (r.Read()) { }
             }
             catch (XmlException ex)
             {
-                sb.AppendLine("Loi cu phap XML: " + ex.Message);
+                sb.AppendLine("Dong " + ex.LineNumber + ", cot " + ex.LinePosition +
+                    ": Loi XML/XSD: " + ex.Message);
+            }
+            catch (XmlSchemaException ex)
+            {
+                sb.AppendLine("Dong " + ex.LineNumber + ", cot " + ex.LinePosition +
+                    ": Loi schema XSD: " + ex.Message);
+            }
+            catch (Exception ex)
+            {
+                sb.AppendLine("Dong 0, cot 0: Khong the kiem tra XML/XSD: " + ex.Message);
             }
 
             loi = sb.ToString();
