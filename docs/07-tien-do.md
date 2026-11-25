@@ -12,7 +12,7 @@ Mỗi người tự cập nhật task của mình. Trạng thái: Chưa bắt đ
 | T6 | Quốc | Chờ review | feature/quoc-bep | - | Đã tạo frmBep: 3 cột Chờ, Đang làm, Xong; chữ to, thẻ món đủ thông tin; nút Nhận làm và Làm xong; cập nhật TrangThaiBep vào DB bằng SqlParameter; Timer tự làm mới 4s qua fx.TaoXml; cột Xong giữ 5 phút gần nhất; chỉ lấy món thuộc hóa đơn Đang phục vụ |
 | T7 | Hải | Chờ review | - | - | Đã tạo frmThanhToan; giao dịch thanh toán, cập nhật XML và tìm khách bằng SĐT. Cần chạy thử với SQL Server và các hàm tích điểm/trừ kho đã hoàn thiện |
 | T8 | Hải | Chờ review | - | - | Đã tạo XSLT in hóa đơn, gộp dữ liệu theo hóa đơn được chọn và mở HTML bằng trình duyệt. Cần chạy thử từ ứng dụng và kiểm tra bản in thực tế |
-| T9 | Duy | Chưa bắt đầu | - | - | Chờ T1 |
+| T9 | Duy | Chờ review | feature/duy-khachhang | - | Đã hoàn thành nghiệp vụ KhachHang (PhanTramGiam, CongDiem, tự nâng hạng, an toàn ngoại lệ, dùng SqlParameter), giao diện frmKhachHang CRUD, tìm kiếm theo SĐT, tự sinh mã KH, kiểm tra trùng SĐT, xác nhận xóa và đồng bộ XML với SQL Server |
 | T10 | Duy | Chưa bắt đầu | - | - | Chờ T1 |
 | T11 | Duy | Chưa bắt đầu | - | - | Chờ T3, T10 |
 | T12 | Duy | Chưa bắt đầu | - | - | Chờ T10 |
