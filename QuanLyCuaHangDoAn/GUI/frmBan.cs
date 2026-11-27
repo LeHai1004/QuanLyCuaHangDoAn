@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
@@ -29,17 +30,21 @@ namespace QuanLyCuaHangDoAn
     {
         private readonly FileXml fx = new FileXml();
         private readonly FlowLayoutPanel flpDanhSachBan = new FlowLayoutPanel();
-        private readonly ToolTip toolTip = new ToolTip();
+        private BanCard banDangChon;
 
         public event EventHandler<BanDuocChonEventArgs> BanDuocChon;
+        public int SoLuongBan { get; private set; }
+        public int SoBanTrong { get; private set; }
+        public int SoBanCoKhach { get; private set; }
 
         public BanSoDoControl()
         {
+            Name = "banSoDo";
             BackColor = Color.White;
-            Dock = DockStyle.Fill;
+            Margin = Padding.Empty;
             flpDanhSachBan.Dock = DockStyle.Fill;
             flpDanhSachBan.AutoScroll = true;
-            flpDanhSachBan.Padding = new Padding(12);
+            flpDanhSachBan.Padding = Padding.Empty;
             flpDanhSachBan.WrapContents = true;
             Controls.Add(flpDanhSachBan);
         }
@@ -48,6 +53,10 @@ namespace QuanLyCuaHangDoAn
         {
             fx.TaoXml("SELECT * FROM Ban", "Ban", "Ban.xml");
             DataTable duLieu = fx.HienThi("Ban.xml");
+            banDangChon = null;
+            SoLuongBan = duLieu.Rows.Count;
+            SoBanTrong = 0;
+            SoBanCoKhach = 0;
             flpDanhSachBan.SuspendLayout();
             try
             {
@@ -62,23 +71,17 @@ namespace QuanLyCuaHangDoAn
                     string tenBan = Convert.ToString(dong["TenBan"]);
                     int soGhe = Convert.ToInt32(dong["SoGhe"], CultureInfo.InvariantCulture);
                     string trangThai = Convert.ToString(dong["TrangThai"]);
-                    Color mau;
-
                     if (trangThai == "Trống")
-                        mau = GiaoDien.MauXanh;
+                        SoBanTrong++;
                     else if (trangThai == "Có khách")
-                        mau = GiaoDien.MauDo;
+                        SoBanCoKhach++;
                     else
                         throw new InvalidOperationException("Bàn " + maBan + " có trạng thái không hợp lệ: " + trangThai);
 
-                    var btnBan = GiaoDien.TaoNut(tenBan + Environment.NewLine + soGhe + " ghế", mau);
-                    btnBan.Width = 150;
-                    btnBan.Height = 78;
-                    btnBan.Margin = new Padding(8);
-                    btnBan.Tag = new BanDuocChonEventArgs(maBan, tenBan, soGhe, trangThai);
-                    toolTip.SetToolTip(btnBan, maBan + " - " + trangThai);
-                    btnBan.Click += btnBan_Click;
-                    flpDanhSachBan.Controls.Add(btnBan);
+                    var ban = new BanDuocChonEventArgs(maBan, tenBan, soGhe, trangThai);
+                    var theBan = new BanCard(ban);
+                    theBan.Click += btnBan_Click;
+                    flpDanhSachBan.Controls.Add(theBan);
                 }
             }
             finally
@@ -87,12 +90,156 @@ namespace QuanLyCuaHangDoAn
             }
         }
 
+        public void BoChon()
+        {
+            if (banDangChon == null)
+                return;
+            banDangChon.DangChon = false;
+            banDangChon = null;
+        }
+
         private void btnBan_Click(object sender, EventArgs e)
         {
-            var btnBan = sender as Button;
-            var ban = btnBan != null ? btnBan.Tag as BanDuocChonEventArgs : null;
-            if (ban != null)
-                BanDuocChon?.Invoke(this, ban);
+            BanCard theBan = sender as BanCard;
+            if (theBan == null)
+                return;
+            BoChon();
+            banDangChon = theBan;
+            banDangChon.DangChon = true;
+            BanDuocChon?.Invoke(this, theBan.Ban);
+        }
+
+        private sealed class BanCard : Panel
+        {
+            private readonly BanDuocChonEventArgs ban;
+            private bool dangHover;
+            private bool dangChon;
+
+            public BanDuocChonEventArgs Ban
+            {
+                get { return ban; }
+            }
+
+            public bool DangChon
+            {
+                get { return dangChon; }
+                set
+                {
+                    if (dangChon == value)
+                        return;
+                    dangChon = value;
+                    Invalidate();
+                }
+            }
+
+            public BanCard(BanDuocChonEventArgs ban)
+            {
+                this.ban = ban;
+                Name = "theBan_" + ban.MaBan;
+                Size = new Size(200, 120);
+                Margin = new Padding(5);
+                Cursor = Cursors.Hand;
+                DoubleBuffered = true;
+                ResizeRedraw = true;
+                BackColor = ban.TrangThai == "Trống"
+                    ? Color.FromArgb(236, 253, 243)
+                    : Color.FromArgb(254, 242, 242);
+            }
+
+            protected override void OnMouseEnter(EventArgs e)
+            {
+                base.OnMouseEnter(e);
+                dangHover = true;
+                Invalidate();
+            }
+
+            protected override void OnMouseLeave(EventArgs e)
+            {
+                base.OnMouseLeave(e);
+                dangHover = false;
+                Invalidate();
+            }
+
+            protected override void OnPaint(PaintEventArgs e)
+            {
+                base.OnPaint(e);
+                Graphics g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.Clear(BackColor);
+
+                Color mauTrangThai = ban.TrangThai == "Trống"
+                    ? Color.FromArgb(22, 163, 74)
+                    : Color.FromArgb(220, 38, 38);
+                Color mauVien = dangChon ? Color.FromArgb(232, 101, 26) : mauTrangThai;
+                float doDayVien = dangChon || dangHover ? 3F : 2F;
+                Rectangle vienThe = new Rectangle(1, 1, Width - 3, Height - 3);
+                using (GraphicsPath pathThe = TaoChuNhatBoGoc(vienThe, 10))
+                using (Pen vien = new Pen(mauVien, doDayVien))
+                {
+                    g.DrawPath(vien, pathThe);
+                }
+
+                Rectangle matBan = new Rectangle((Width - 60) / 2, 12, 60, 26);
+                VeGhe(g, matBan, mauTrangThai, Math.Min(ban.SoGhe, 8));
+                using (GraphicsPath pathMatBan = TaoChuNhatBoGoc(matBan, 6))
+                using (SolidBrush nenMatBan = new SolidBrush(mauTrangThai))
+                {
+                    g.FillPath(nenMatBan, pathMatBan);
+                }
+
+                using (Font fontTen = new Font("Segoe UI", 12F, FontStyle.Bold))
+                using (Font fontGhe = new Font("Segoe UI", 9F))
+                {
+                    TextRenderer.DrawText(g, ban.TenBan, fontTen,
+                        new Rectangle(8, 47, Width - 16, 20), Color.FromArgb(17, 24, 39),
+                        TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
+                    TextRenderer.DrawText(g, ban.SoGhe + " ghế", fontGhe,
+                        new Rectangle(8, 67, Width - 16, 15), Color.FromArgb(107, 114, 128),
+                        TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+                }
+
+                Rectangle badge = new Rectangle((Width - 80) / 2, 91, 80, 22);
+                using (GraphicsPath pathBadge = TaoChuNhatBoGoc(badge, 11))
+                using (SolidBrush nenBadge = new SolidBrush(mauTrangThai))
+                using (Font fontBadge = new Font("Segoe UI", 8.5F, FontStyle.Bold))
+                {
+                    g.FillPath(nenBadge, pathBadge);
+                    TextRenderer.DrawText(g, ban.TrangThai, fontBadge, badge, Color.White,
+                        TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+                }
+            }
+
+            private static void VeGhe(Graphics g, Rectangle matBan, Color mau, int soGhe)
+            {
+                int gheTren = (soGhe + 1) / 2;
+                int gheDuoi = soGhe / 2;
+                using (SolidBrush nenGhe = new SolidBrush(mau))
+                {
+                    VeHangGhe(g, nenGhe, matBan, gheTren, matBan.Top - 8);
+                    VeHangGhe(g, nenGhe, matBan, gheDuoi, matBan.Bottom - 2);
+                }
+            }
+
+            private static void VeHangGhe(Graphics g, Brush nen, Rectangle matBan, int soGhe, int top)
+            {
+                for (int i = 0; i < soGhe; i++)
+                {
+                    int left = matBan.Left + ((i + 1) * matBan.Width) / (soGhe + 1) - 5;
+                    g.FillEllipse(nen, left, top, 10, 10);
+                }
+            }
+
+            private static GraphicsPath TaoChuNhatBoGoc(Rectangle hinh, float banKinh)
+            {
+                float duongKinh = banKinh * 2;
+                GraphicsPath path = new GraphicsPath();
+                path.AddArc(hinh.X, hinh.Y, duongKinh, duongKinh, 180, 90);
+                path.AddArc(hinh.Right - duongKinh, hinh.Y, duongKinh, duongKinh, 270, 90);
+                path.AddArc(hinh.Right - duongKinh, hinh.Bottom - duongKinh, duongKinh, duongKinh, 0, 90);
+                path.AddArc(hinh.X, hinh.Bottom - duongKinh, duongKinh, duongKinh, 90, 90);
+                path.CloseFigure();
+                return path;
+            }
         }
     }
 
@@ -111,6 +258,9 @@ namespace QuanLyCuaHangDoAn
         private readonly Button btnLuu = GiaoDien.TaoNut("Lưu", GiaoDien.MauXanh);
         private readonly Button btnHuy = GiaoDien.TaoNut("Hủy", GiaoDien.MauChinhDam);
         private readonly Button btnLamMoi = GiaoDien.TaoNut("Làm mới", GiaoDien.MauChinh);
+        private Label lblTongBanSo;
+        private Label lblBanTrongSo;
+        private Label lblBanCoKhachSo;
 
         private string cheDo = "";
         private bool choDongBo;
@@ -127,51 +277,89 @@ namespace QuanLyCuaHangDoAn
         private void KhoiTaoGiaoDien()
         {
             Text = laAdmin ? "Quản lý bàn" : "Sơ đồ bàn";
-            StartPosition = FormStartPosition.CenterScreen;
-            BackColor = Color.White;
-            Font = GiaoDien.FontThuong;
-            ClientSize = new Size(1080, 650);
-            MinimumSize = new Size(900, 520);
+            StartPosition = FormStartPosition.CenterParent;
+            AutoScaleMode = AutoScaleMode.None;
+            BackColor = Color.FromArgb(245, 246, 248);
+            Font = new Font("Segoe UI", 10F);
+            ClientSize = new Size(1100, 680);
+            MinimumSize = new Size(1116, 719);
+            DoubleBuffered = true;
 
-            var split = new SplitContainer
+            Panel pnlTheSoDo = new Panel
             {
-                Dock = DockStyle.Fill,
-                Size = new Size(1080, 594),
-                BorderStyle = BorderStyle.None
+                Name = "pnlTheSoDo",
+                Location = new Point(30, 100),
+                Size = new Size(690, 550),
+                BackColor = Color.White,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Bottom
             };
-            split.Panel1MinSize = 400;
-            split.Panel2MinSize = 330;
-            split.SplitterDistance = 650;
+            pnlTheSoDo.Paint += pnlThe_Paint;
 
-            var legend = new FlowLayoutPanel
+            Panel pnlThongTin = new Panel
             {
+                Name = "pnlThongTin",
+                Location = new Point(745, 100),
+                Size = new Size(325, 550),
+                BackColor = Color.White,
+                Anchor = AnchorStyles.Top | AnchorStyles.Right | AnchorStyles.Bottom
+            };
+            pnlThongTin.Paint += pnlThe_Paint;
+
+            ThemThongKe(pnlTheSoDo);
+            Label lblSoDo = new Label
+            {
+                Name = "lblSoDo",
+                Text = "SƠ ĐỒ BÀN",
+                Left = 20,
+                Top = 95,
+                Width = 650,
+                Height = 20,
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(55, 65, 81)
+            };
+            pnlTheSoDo.Controls.Add(lblSoDo);
+
+            banSoDo.Location = new Point(20, 125);
+            banSoDo.Size = new Size(650, 410);
+            banSoDo.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
+            pnlTheSoDo.Controls.Add(banSoDo);
+            TaoKhungCrud(pnlThongTin);
+
+            Panel pnlHeader = new Panel
+            {
+                Name = "pnlHeader",
                 Dock = DockStyle.Top,
-                Height = 42,
-                Padding = new Padding(12, 8, 8, 4),
-                WrapContents = false
+                Height = 80,
+                BackColor = Color.FromArgb(232, 101, 26)
             };
-            legend.Controls.Add(TaoChuGiai(GiaoDien.MauXanh, "Trống"));
-            legend.Controls.Add(TaoChuGiai(GiaoDien.MauDo, "Có khách"));
-
-            split.Panel1.Controls.Add(banSoDo);
-            split.Panel1.Controls.Add(legend);
-
-            if (laAdmin)
-                TaoKhungCrud(split.Panel2);
-            else
+            Label lblTieuDe = new Label
             {
-                split.Panel2MinSize = 0;
-                split.Panel2Collapsed = true;
-            }
+                Name = "lblTieuDe",
+                Text = "QUẢN LÝ BÀN",
+                Left = 30,
+                Top = 12,
+                Width = 450,
+                Height = 30,
+                Font = new Font("Segoe UI", 20F, FontStyle.Bold),
+                ForeColor = Color.White
+            };
+            Label lblMoTa = new Label
+            {
+                Name = "lblMoTa",
+                Text = "Sơ đồ bàn và thông tin chi tiết",
+                Left = 32,
+                Top = 50,
+                Width = 450,
+                Height = 18,
+                Font = new Font("Segoe UI", 10F),
+                ForeColor = Color.White
+            };
+            pnlHeader.Controls.Add(lblTieuDe);
+            pnlHeader.Controls.Add(lblMoTa);
 
-            var nutLamMoi = new Panel { Dock = DockStyle.Bottom, Height = 52, Padding = new Padding(8) };
-            btnLamMoi.Width = 120;
-            btnLamMoi.Dock = DockStyle.Right;
-            nutLamMoi.Controls.Add(btnLamMoi);
-            split.Panel1.Controls.Add(nutLamMoi);
-
-            Controls.Add(split);
-            Controls.Add(GiaoDien.TaoTieuDe(laAdmin ? "QUẢN LÝ BÀN" : "SƠ ĐỒ BÀN"));
+            Controls.Add(pnlTheSoDo);
+            Controls.Add(pnlThongTin);
+            Controls.Add(pnlHeader);
 
             banSoDo.BanDuocChon += banSoDo_BanDuocChon;
             btnThem.Click += btnThem_Click;
@@ -183,71 +371,184 @@ namespace QuanLyCuaHangDoAn
             CapNhatTrangThaiNut();
         }
 
-        private static Label TaoChuGiai(Color mau, string noiDung)
+        private void ThemThongKe(Panel pnlTheSoDo)
         {
-            return new Label
-            {
-                AutoSize = true,
-                Text = "● " + noiDung,
-                ForeColor = mau,
-                Font = GiaoDien.FontDam,
-                Margin = new Padding(0, 2, 20, 0)
-            };
+            pnlTheSoDo.Controls.Add(TaoOThongKe("pnlThongKeTong", "Tổng bàn",
+                Color.FromArgb(17, 24, 39), 20, out lblTongBanSo));
+            pnlTheSoDo.Controls.Add(TaoOThongKe("pnlThongKeTrong", "Trống",
+                Color.FromArgb(22, 163, 74), 230, out lblBanTrongSo));
+            pnlTheSoDo.Controls.Add(TaoOThongKe("pnlThongKeCoKhach", "Có khách",
+                Color.FromArgb(220, 38, 38), 440, out lblBanCoKhachSo));
         }
 
-        private void TaoKhungCrud(Control cha)
+        private static Panel TaoOThongKe(string ten, string nhan, Color mau, int left, out Label lblGiaTri)
         {
-            var fields = new TableLayoutPanel
+            Panel pnl = new Panel
             {
-                Dock = DockStyle.Top,
-                Padding = new Padding(12),
-                ColumnCount = 1,
-                RowCount = 0,
-                AutoSize = true
+                Name = ten,
+                Left = left,
+                Top = 20,
+                Width = 200,
+                Height = 60,
+                BackColor = Color.FromArgb(249, 250, 251)
             };
-            fields.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            ThemTruong(fields, "Mã bàn", txtMaBan, true);
-            ThemTruong(fields, "Tên bàn", txtTenBan, false);
-            ThemTruong(fields, "Số ghế", nudSoGhe, false);
-            ThemTruong(fields, "Trạng thái", cboTrangThai, false);
+            lblGiaTri = new Label
+            {
+                Name = "lbl" + ten.Substring(3) + "So",
+                Text = "0",
+                Left = 0,
+                Top = 4,
+                Width = 200,
+                Height = 28,
+                Font = new Font("Segoe UI", 18F, FontStyle.Bold),
+                ForeColor = mau,
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+            Label lblNhan = new Label
+            {
+                Name = "lbl" + ten.Substring(3),
+                Text = nhan,
+                Left = 0,
+                Top = 34,
+                Width = 200,
+                Height = 18,
+                Font = new Font("Segoe UI", 9F),
+                ForeColor = Color.FromArgb(107, 114, 128),
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+            pnl.Controls.Add(lblGiaTri);
+            pnl.Controls.Add(lblNhan);
+            return pnl;
+        }
 
+        private void TaoKhungCrud(Panel cha)
+        {
+            Label lblThongTin = new Label
+            {
+                Name = "lblThongTin",
+                Text = "THÔNG TIN BÀN",
+                Left = 20,
+                Top = 20,
+                Width = 285,
+                Height = 24,
+                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(232, 101, 26)
+            };
+            cha.Controls.Add(lblThongTin);
+
+            ThemTruong(cha, "Mã bàn", "lblMaBan", txtMaBan, "txtMaBan", 65);
+            ThemTruong(cha, "Tên bàn", "lblTenBan", txtTenBan, "txtTenBan", 135);
+            ThemTruong(cha, "Số ghế", "lblSoGhe", nudSoGhe, "nudSoGhe", 205);
+            ThemTruong(cha, "Trạng thái", "lblTrangThai", cboTrangThai, "cboTrangThai", 275);
+
+            txtMaBan.ReadOnly = true;
+            txtMaBan.BorderStyle = BorderStyle.FixedSingle;
+            txtMaBan.BackColor = Color.FromArgb(243, 244, 246);
             nudSoGhe.Minimum = 1;
             nudSoGhe.Maximum = int.MaxValue;
             nudSoGhe.DecimalPlaces = 0;
             nudSoGhe.ThousandsSeparator = true;
-            nudSoGhe.Dock = DockStyle.Fill;
+            nudSoGhe.BorderStyle = BorderStyle.FixedSingle;
             cboTrangThai.DropDownStyle = ComboBoxStyle.DropDownList;
+            cboTrangThai.IntegralHeight = false;
             cboTrangThai.Items.AddRange(new object[] { "Trống", "Có khách" });
 
-            var nutPanel = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Top,
-                Height = 100,
-                Padding = new Padding(8),
-                WrapContents = true
-            };
-            foreach (Button btn in new[] { btnThem, btnSua, btnXoa, btnLuu, btnHuy })
-            {
-                btn.Width = 100;
-                btn.Margin = new Padding(5);
-                nutPanel.Controls.Add(btn);
-            }
+            DinhDangNut(btnThem, "btnThem", Color.FromArgb(232, 101, 26), Color.White,
+                Color.FromArgb(207, 85, 16), false);
+            DinhDangNut(btnSua, "btnSua", Color.FromArgb(37, 99, 235), Color.White,
+                Color.FromArgb(29, 78, 216), false);
+            DinhDangNut(btnXoa, "btnXoa", Color.FromArgb(220, 38, 38), Color.White,
+                Color.FromArgb(185, 28, 28), false);
+            DinhDangNut(btnLuu, "btnLuu", Color.FromArgb(22, 163, 74), Color.White,
+                Color.FromArgb(21, 128, 61), false);
+            DinhDangNut(btnHuy, "btnHuy", Color.FromArgb(107, 114, 128), Color.White,
+                Color.FromArgb(75, 85, 99), false);
+            DinhDangNut(btnLamMoi, "btnLamMoi", Color.White, Color.FromArgb(232, 101, 26),
+                Color.FromArgb(255, 243, 234), true);
 
-            cha.Controls.Add(nutPanel);
-            cha.Controls.Add(fields);
+            TableLayoutPanel nutGrid = new TableLayoutPanel
+            {
+                Name = "tlpNut",
+                Left = 20,
+                Top = 370,
+                Width = 285,
+                Height = 96,
+                ColumnCount = 3,
+                RowCount = 2,
+                GrowStyle = TableLayoutPanelGrowStyle.FixedSize,
+                Margin = Padding.Empty,
+                Padding = Padding.Empty
+            };
+            nutGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34.21F));
+            nutGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34.21F));
+            nutGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 31.58F));
+            nutGrid.RowStyles.Add(new RowStyle(SizeType.Absolute, 48F));
+            nutGrid.RowStyles.Add(new RowStyle(SizeType.Absolute, 48F));
+            nutGrid.Controls.Add(btnThem, 0, 0);
+            nutGrid.Controls.Add(btnSua, 1, 0);
+            nutGrid.Controls.Add(btnXoa, 2, 0);
+            nutGrid.Controls.Add(btnLuu, 0, 1);
+            nutGrid.Controls.Add(btnHuy, 1, 1);
+            nutGrid.Controls.Add(btnLamMoi, 2, 1);
+            cha.Controls.Add(nutGrid);
         }
 
-        private static void ThemTruong(TableLayoutPanel panel, string nhan, Control control, bool chiDoc)
+        private static void ThemTruong(Panel panel, string nhan, string tenLabel, Control control,
+            string tenControl, int top)
         {
-            int row = panel.RowCount;
-            panel.RowCount += 2;
-            panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 26));
-            panel.Controls.Add(new Label { Text = nhan, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft }, 0, row);
-            panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 34));
-            control.Dock = DockStyle.Fill;
-            if (control is TextBox)
-                ((TextBox)control).ReadOnly = chiDoc;
-            panel.Controls.Add(control, 0, row + 1);
+            Label lbl = new Label
+            {
+                Name = tenLabel,
+                Text = nhan,
+                Left = 20,
+                Top = top,
+                Width = 285,
+                Height = 18,
+                Font = new Font("Segoe UI", 9F),
+                ForeColor = Color.FromArgb(107, 114, 128)
+            };
+            control.Name = tenControl;
+            control.Left = 20;
+            control.Top = top + 22;
+            control.Width = 285;
+            control.Height = 36;
+            control.Font = new Font("Segoe UI", 11F);
+            panel.Controls.Add(lbl);
+            panel.Controls.Add(control);
+        }
+
+        private static void DinhDangNut(Button btn, string ten, Color nen, Color chu,
+            Color hover, bool coVien)
+        {
+            btn.Name = ten;
+            btn.Size = new Size(90, 40);
+            btn.Margin = Padding.Empty;
+            btn.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            btn.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+            btn.BackColor = nen;
+            btn.ForeColor = chu;
+            btn.FlatStyle = FlatStyle.Flat;
+            btn.UseVisualStyleBackColor = false;
+            btn.Cursor = Cursors.Hand;
+            btn.FlatAppearance.BorderSize = coVien ? 1 : 0;
+            btn.FlatAppearance.BorderColor = Color.FromArgb(232, 101, 26);
+            btn.FlatAppearance.MouseOverBackColor = hover;
+        }
+
+        private static void pnlThe_Paint(object sender, PaintEventArgs e)
+        {
+            Control pnl = (Control)sender;
+            using (Pen vien = new Pen(Color.FromArgb(229, 231, 235), 1F))
+            {
+                e.Graphics.DrawRectangle(vien, 0, 0, pnl.Width - 1, pnl.Height - 1);
+            }
+        }
+
+        private void CapNhatThongKe()
+        {
+            lblTongBanSo.Text = banSoDo.SoLuongBan.ToString(CultureInfo.InvariantCulture);
+            lblBanTrongSo.Text = banSoDo.SoBanTrong.ToString(CultureInfo.InvariantCulture);
+            lblBanCoKhachSo.Text = banSoDo.SoBanCoKhach.ToString(CultureInfo.InvariantCulture);
         }
 
         private void frmBan_Load(object sender, EventArgs e)
@@ -255,6 +556,7 @@ namespace QuanLyCuaHangDoAn
             try
             {
                 banSoDo.TaiDanhSachBan();
+                CapNhatThongKe();
             }
             catch (Exception ex)
             {
@@ -277,6 +579,7 @@ namespace QuanLyCuaHangDoAn
             try
             {
                 banSoDo.TaiDanhSachBan();
+                CapNhatThongKe();
                 HuyChinhSua();
             }
             catch (Exception ex)
@@ -453,6 +756,7 @@ namespace QuanLyCuaHangDoAn
             try
             {
                 banSoDo.TaiDanhSachBan();
+                CapNhatThongKe();
                 HuyChinhSua();
             }
             catch (Exception ex)
@@ -473,6 +777,7 @@ namespace QuanLyCuaHangDoAn
         {
             cheDo = "";
             maBanDangChon = "";
+            banSoDo.BoChon();
             txtMaBan.Clear();
             txtTenBan.Clear();
             nudSoGhe.Value = 1;
@@ -516,6 +821,12 @@ namespace QuanLyCuaHangDoAn
             nudSoGhe.Enabled = dangChinhSua;
             cboTrangThai.Enabled = dangChinhSua;
             btnLuu.Text = choDongBo ? "Đồng bộ" : "Lưu";
+            txtMaBan.BackColor = Color.FromArgb(243, 244, 246);
+            txtTenBan.BackColor = dangChinhSua ? Color.White : Color.FromArgb(243, 244, 246);
+            nudSoGhe.ReadOnly = !dangChinhSua;
+            nudSoGhe.BackColor = dangChinhSua ? Color.White : Color.FromArgb(243, 244, 246);
+            cboTrangThai.Enabled = dangChinhSua;
+            cboTrangThai.BackColor = dangChinhSua ? Color.White : Color.FromArgb(243, 244, 246);
             Text = choDongBo && !string.IsNullOrEmpty(hanhDongChoDongBo)
                 ? "Quản lý bàn - chờ đồng bộ " + hanhDongChoDongBo
                 : laAdmin ? "Quản lý bàn" : "Sơ đồ bàn";

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing;
 using System.Windows.Forms;
 using QuanLyCuaHangDoAn.Class;
 
@@ -13,6 +14,8 @@ namespace QuanLyCuaHangDoAn.GUI
 
         private MenuStrip menu;
         private StatusStrip thanhTrangThai;
+        private Panel pnlVungNoiDung;
+        private ucTrangChu trangChu;
 
         // true khi người dùng bấm Đăng xuất (Program dùng để quay lại màn đăng nhập)
         public bool DangXuat { get; private set; }
@@ -36,6 +39,8 @@ namespace QuanLyCuaHangDoAn.GUI
             XayDungMenu();
             XayDungThanhTrangThai();
             ApDungQuyen();
+            XayDungTrangChu();
+            Activated += frmMain_Activated;
         }
 
         private static bool CoQuyen(string[] dsChucVu)
@@ -56,14 +61,22 @@ namespace QuanLyCuaHangDoAn.GUI
 
         private ToolStripMenuItem ThemNhom(string ten)
         {
-            ToolStripMenuItem nhom = new ToolStripMenuItem(ten);
+            ToolStripMenuItem nhom = new ToolStripMenuItem(ten)
+            {
+                ForeColor = Color.FromArgb(55, 65, 81),
+                Font = new Font("Segoe UI", 10F)
+            };
             menu.Items.Add(nhom);
             return nhom;
         }
 
         private void ThemMuc(ToolStripMenuItem nhom, string ten, string[] quyen)
         {
-            ToolStripMenuItem muc = new ToolStripMenuItem(ten);
+            ToolStripMenuItem muc = new ToolStripMenuItem(ten)
+            {
+                ForeColor = Color.FromArgb(55, 65, 81),
+                Font = new Font("Segoe UI", 10F)
+            };
             muc.Tag = quyen;
             muc.Click += Muc_Click;
             nhom.DropDownItems.Add(muc);
@@ -71,7 +84,14 @@ namespace QuanLyCuaHangDoAn.GUI
 
         private void XayDungMenu()
         {
-            menu = new MenuStrip();
+            menu = new MenuStrip
+            {
+                Dock = DockStyle.Top,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(55, 65, 81),
+                Font = new Font("Segoe UI", 10F),
+                Renderer = new ToolStripProfessionalRenderer(new DashboardColorTable())
+            };
 
             ToolStripMenuItem heThong = ThemNhom("Hệ thống");
             ThemMuc(heThong, "Đổi mật khẩu", TatCa);
@@ -111,11 +131,66 @@ namespace QuanLyCuaHangDoAn.GUI
 
         private void XayDungThanhTrangThai()
         {
-            thanhTrangThai = new StatusStrip();
-            ToolStripStatusLabel nhan = new ToolStripStatusLabel();
+            thanhTrangThai = new StatusStrip
+            {
+                Dock = DockStyle.Bottom,
+                BackColor = Color.FromArgb(255, 243, 234),
+                ForeColor = Color.FromArgb(55, 65, 81),
+                Font = new Font("Segoe UI", 9F),
+                SizingGrip = false,
+                Renderer = new ToolStripProfessionalRenderer(new DashboardColorTable())
+            };
+            ToolStripStatusLabel nhan = new ToolStripStatusLabel
+            {
+                ForeColor = Color.FromArgb(55, 65, 81),
+                BackColor = Color.FromArgb(255, 243, 234)
+            };
             nhan.Text = "Người dùng: " + PhienDangNhap.TenNV + "   |   Vai trò: " + TenVaiTro(PhienDangNhap.ChucVu);
             thanhTrangThai.Items.Add(nhan);
             Controls.Add(thanhTrangThai);
+        }
+
+        private void XayDungTrangChu()
+        {
+            pnlVungNoiDung = new Panel
+            {
+                Name = "pnlVungNoiDung",
+                Dock = DockStyle.Fill,
+                BackColor = Color.FromArgb(245, 246, 248)
+            };
+            trangChu = new ucTrangChu(PhienDangNhap.TenNV, PhienDangNhap.ChucVu, MoChucNangTrangChu)
+            {
+                Dock = DockStyle.Fill
+            };
+            pnlVungNoiDung.Controls.Add(trangChu);
+            Controls.Add(pnlVungNoiDung);
+            pnlVungNoiDung.SendToBack();
+            menu.BringToFront();
+            thanhTrangThai.BringToFront();
+        }
+
+        private void frmMain_Activated(object sender, EventArgs e)
+        {
+            if (trangChu != null && trangChu.Visible)
+                trangChu.LamMoiDuLieu();
+        }
+
+        private void MoChucNangTrangChu(string tenMuc)
+        {
+            foreach (ToolStripMenuItem nhom in menu.Items)
+            {
+                foreach (ToolStripItem muc in nhom.DropDownItems)
+                {
+                    if (string.Equals(muc.Text, tenMuc, StringComparison.Ordinal))
+                    {
+                        Muc_Click(muc, EventArgs.Empty);
+                        return;
+                    }
+                }
+            }
+
+            MessageBox.Show("Chức năng \"" + tenMuc + "\" đang được phát triển.", "Thông báo",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         // Ẩn mục không đủ quyền; nhóm không còn mục nào thì ẩn luôn
@@ -180,6 +255,26 @@ namespace QuanLyCuaHangDoAn.GUI
                 MoForm(new frmKhachHang());
                 return;
             }
+            if (muc.Text == "Màn hình bếp")
+            {
+                MoForm(new frmBep());
+                return;
+            }
+            if (muc.Text == "Danh mục")
+            {
+                MoForm(new frmDanhMuc());
+                return;
+            }
+            if (muc.Text == "Món ăn")
+            {
+                MoForm(new frmMonAn());
+                return;
+            }
+            if (muc.Text == "Bàn")
+            {
+                MoForm(new frmBan());
+                return;
+            }
             if (muc.Text == "Nguyên liệu")
             {
                 MoForm(new frmNguyenLieu());
@@ -198,6 +293,11 @@ namespace QuanLyCuaHangDoAn.GUI
             if (muc.Text == "Phiếu nhập")
             {
                 MoForm(new frmPhieuNhap());
+                return;
+            }
+            if (muc.Text == "Thống kê")
+            {
+                MoForm(new frmThongKe());
                 return;
             }
             if (muc.Text == "Nhập/xuất XML")
@@ -221,6 +321,25 @@ namespace QuanLyCuaHangDoAn.GUI
             PhienDangNhap.DangXuat();
             DangXuat = true;
             Close();
+        }
+
+        private sealed class DashboardColorTable : ProfessionalColorTable
+        {
+            private static readonly Color MauMenu = Color.White;
+            private static readonly Color MauHover = Color.FromArgb(255, 243, 234);
+            private static readonly Color MauThanhTrangThai = Color.FromArgb(255, 243, 234);
+
+            public override Color MenuStripGradientBegin { get { return MauMenu; } }
+            public override Color MenuStripGradientEnd { get { return MauMenu; } }
+            public override Color ToolStripDropDownBackground { get { return MauMenu; } }
+            public override Color MenuItemSelected { get { return MauHover; } }
+            public override Color MenuItemSelectedGradientBegin { get { return MauHover; } }
+            public override Color MenuItemSelectedGradientEnd { get { return MauHover; } }
+            public override Color MenuItemPressedGradientBegin { get { return MauHover; } }
+            public override Color MenuItemPressedGradientMiddle { get { return MauHover; } }
+            public override Color MenuItemPressedGradientEnd { get { return MauHover; } }
+            public override Color StatusStripGradientBegin { get { return MauThanhTrangThai; } }
+            public override Color StatusStripGradientEnd { get { return MauThanhTrangThai; } }
         }
     }
 }

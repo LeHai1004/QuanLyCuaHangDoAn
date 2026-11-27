@@ -19,7 +19,7 @@ namespace QuanLyCuaHangDoAn.GUI
         {
             this.components = new System.ComponentModel.Container();
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1160, 640);
+            this.ClientSize = new System.Drawing.Size(1100, 680);
             this.Text = "Quản lý khách hàng";
         }
 

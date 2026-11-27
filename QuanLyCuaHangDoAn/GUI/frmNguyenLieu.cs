@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
@@ -16,12 +17,6 @@ namespace QuanLyCuaHangDoAn.GUI
         private const string TenBang = "NguyenLieu";
 
         private readonly FileXml fx = new FileXml();
-        private readonly SplitContainer split = new SplitContainer
-        {
-            Dock = DockStyle.Fill,
-            BorderStyle = BorderStyle.None
-        };
-
         private readonly DataGridView dgvNguyenLieu = new DataGridView();
         private readonly TextBox txtMaNL = new TextBox();
         private readonly TextBox txtTenNL = new TextBox();
@@ -38,6 +33,14 @@ namespace QuanLyCuaHangDoAn.GUI
         private readonly Button btnTim = GiaoDien.TaoNut("Tìm", GiaoDien.MauChinh);
 
         private DataTable duLieu;
+        private Label lblTongNguyenLieu;
+        private Label lblDuHang;
+        private Label lblSapHet;
+        private Label lblHetHang;
+        private Panel pnlMucTonKho;
+        private Label lblMucTonKho;
+        private StockProgressBar prgMucTonKho;
+        private Label lblChiTietTonKho;
         private string cheDo = "";
         private bool choDongBo;
         private string hanhDongChoDongBo;
@@ -51,11 +54,11 @@ namespace QuanLyCuaHangDoAn.GUI
         private void KhoiTaoGiaoDien()
         {
             Text = "Quản lý nguyên liệu";
-            StartPosition = FormStartPosition.CenterScreen;
-            BackColor = Color.White;
-            Font = GiaoDien.FontThuong;
-            ClientSize = new Size(1160, 640);
-            MinimumSize = new Size(900, 540);
+            StartPosition = FormStartPosition.CenterParent;
+            BackColor = Color.FromArgb(245, 246, 248);
+            Font = new Font("Segoe UI", 10F);
+            ClientSize = new Size(1100, 680);
+            DoubleBuffered = true;
 
             dgvNguyenLieu.Name = "dgvNguyenLieu";
             txtMaNL.Name = "txtMaNL";
@@ -71,69 +74,261 @@ namespace QuanLyCuaHangDoAn.GUI
             btnHuy.Name = "btnHuy";
             btnTim.Name = "btnTim";
 
-            // Panel tìm kiếm phía trên bảng
-            var timPanel = new Panel
+            var pnlHeader = new Panel
             {
+                Name = "pnlHeader",
                 Dock = DockStyle.Top,
-                Height = 48,
-                Padding = new Padding(6)
+                Height = 80,
+                BackColor = Color.FromArgb(232, 101, 26)
             };
-            txtTim.Dock = DockStyle.Fill;
-            txtTim.Font = GiaoDien.FontThuong;
-            btnTim.Dock = DockStyle.Right;
-            btnTim.Width = 90;
-            timPanel.Controls.Add(txtTim);
-            timPanel.Controls.Add(btnTim);
+            pnlHeader.Controls.Add(new Label
+            {
+                Name = "lblTieuDe",
+                Text = "QUẢN LÝ NGUYÊN LIỆU",
+                Location = new Point(30, 12),
+                Size = new Size(650, 32),
+                Font = new Font("Segoe UI", 20F, FontStyle.Bold),
+                ForeColor = Color.White,
+                AutoSize = false
+            });
+            pnlHeader.Controls.Add(new Label
+            {
+                Name = "lblPhuDe",
+                Text = "Tồn kho và định mức cảnh báo",
+                Location = new Point(32, 50),
+                Size = new Size(500, 20),
+                Font = new Font("Segoe UI", 10F),
+                ForeColor = Color.White,
+                AutoSize = false
+            });
 
-            dgvNguyenLieu.Dock = DockStyle.Fill;
+            var pnlTrai = new BorderPanel
+            {
+                Name = "pnlDanhSach",
+                Location = new Point(30, 100),
+                Size = new Size(690, 550),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom,
+                BackColor = Color.White
+            };
+            var tlpThongKe = new TableLayoutPanel
+            {
+                Name = "tlpThongKe",
+                Location = new Point(20, 20),
+                Size = new Size(650, 60),
+                ColumnCount = 7,
+                RowCount = 1,
+                Margin = Padding.Empty,
+                Padding = Padding.Empty,
+                BackColor = Color.White
+            };
+            for (int i = 0; i < 7; i++)
+                tlpThongKe.ColumnStyles.Add(i % 2 == 0
+                    ? new ColumnStyle(SizeType.Percent, 25F)
+                    : new ColumnStyle(SizeType.Absolute, 12F));
+            tlpThongKe.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            tlpThongKe.Controls.Add(TaoTheThongKe("pnlThongKeTong", "Tổng nguyên liệu",
+                "lblTongNguyenLieu", Color.FromArgb(17, 24, 39)), 0, 0);
+            tlpThongKe.Controls.Add(TaoTheThongKe("pnlThongKeDuHang", "Đủ hàng",
+                "lblDuHang", Color.FromArgb(22, 163, 74)), 2, 0);
+            tlpThongKe.Controls.Add(TaoTheThongKe("pnlThongKeSapHet", "Sắp hết",
+                "lblSapHet", Color.FromArgb(220, 38, 38)), 4, 0);
+            tlpThongKe.Controls.Add(TaoTheThongKe("pnlThongKeHetHang", "Hết hàng",
+                "lblHetHang", Color.FromArgb(127, 29, 29)), 6, 0);
+            pnlTrai.Controls.Add(tlpThongKe);
+
+            txtTim.Location = new Point(20, 95);
+            txtTim.Size = new Size(545, 36);
+            txtTim.AutoSize = false;
+            txtTim.BorderStyle = BorderStyle.FixedSingle;
+            txtTim.Font = new Font("Segoe UI", 11F);
+            txtTim.BackColor = Color.White;
+            pnlTrai.Controls.Add(txtTim);
+
+            CauHinhNut(btnTim, Color.FromArgb(232, 101, 26));
+            btnTim.Location = new Point(575, 95);
+            btnTim.Size = new Size(95, 36);
+            pnlTrai.Controls.Add(btnTim);
+
+            dgvNguyenLieu.Location = new Point(20, 145);
+            dgvNguyenLieu.Size = new Size(650, 385);
+            dgvNguyenLieu.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
+            dgvNguyenLieu.BorderStyle = BorderStyle.None;
+            dgvNguyenLieu.BackgroundColor = Color.White;
+            dgvNguyenLieu.EnableHeadersVisualStyles = false;
+            dgvNguyenLieu.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
+            dgvNguyenLieu.GridColor = Color.FromArgb(243, 244, 246);
+            dgvNguyenLieu.RowHeadersVisible = false;
+            dgvNguyenLieu.AllowUserToAddRows = false;
+            dgvNguyenLieu.AllowUserToDeleteRows = false;
+            dgvNguyenLieu.AllowUserToResizeRows = false;
+            dgvNguyenLieu.ReadOnly = true;
+            dgvNguyenLieu.MultiSelect = false;
+            dgvNguyenLieu.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            dgvNguyenLieu.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dgvNguyenLieu.AutoGenerateColumns = false;
+            dgvNguyenLieu.ColumnHeadersHeight = 38;
+            dgvNguyenLieu.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
+            dgvNguyenLieu.RowTemplate.Height = 44;
+            dgvNguyenLieu.ShowCellToolTips = true;
+            dgvNguyenLieu.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(255, 243, 234);
+            dgvNguyenLieu.ColumnHeadersDefaultCellStyle.ForeColor = Color.FromArgb(154, 52, 18);
+            dgvNguyenLieu.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
+            dgvNguyenLieu.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dgvNguyenLieu.ColumnHeadersDefaultCellStyle.WrapMode = DataGridViewTriState.False;
+            dgvNguyenLieu.ColumnHeadersDefaultCellStyle.Padding = new Padding(8, 0, 4, 0);
+            dgvNguyenLieu.ColumnHeadersDefaultCellStyle.SelectionBackColor = Color.FromArgb(255, 243, 234);
+            dgvNguyenLieu.ColumnHeadersDefaultCellStyle.SelectionForeColor = Color.FromArgb(154, 52, 18);
+            dgvNguyenLieu.DefaultCellStyle.BackColor = Color.White;
+            dgvNguyenLieu.DefaultCellStyle.ForeColor = Color.FromArgb(17, 24, 39);
+            dgvNguyenLieu.DefaultCellStyle.Font = new Font("Segoe UI", 10F);
+            dgvNguyenLieu.DefaultCellStyle.WrapMode = DataGridViewTriState.False;
+            dgvNguyenLieu.DefaultCellStyle.Padding = new Padding(8, 0, 4, 0);
+            dgvNguyenLieu.DefaultCellStyle.SelectionBackColor = Color.FromArgb(255, 243, 234);
+            dgvNguyenLieu.DefaultCellStyle.SelectionForeColor = Color.FromArgb(17, 24, 39);
+            dgvNguyenLieu.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(250, 250, 250);
+            dgvNguyenLieu.AlternatingRowsDefaultCellStyle.SelectionBackColor = Color.FromArgb(255, 243, 234);
+            dgvNguyenLieu.AlternatingRowsDefaultCellStyle.SelectionForeColor = Color.FromArgb(17, 24, 39);
+            dgvNguyenLieu.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "MaNL",
+                DataPropertyName = "MaNL",
+                HeaderText = "Mã NL",
+                FillWeight = 12F,
+                SortMode = DataGridViewColumnSortMode.NotSortable
+            });
+            dgvNguyenLieu.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "TenNL",
+                DataPropertyName = "TenNL",
+                HeaderText = "Tên nguyên liệu",
+                FillWeight = 28F,
+                SortMode = DataGridViewColumnSortMode.NotSortable
+            });
+            dgvNguyenLieu.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "DVT",
+                DataPropertyName = "DVT",
+                HeaderText = "ĐVT",
+                FillWeight = 10F,
+                SortMode = DataGridViewColumnSortMode.NotSortable
+            });
+            var cotTonKho = TaoCotSo("TonKho", "Tồn kho", 14F);
+            var cotDinhMuc = TaoCotSo("DinhMuc", "Định mức", 14F);
+            dgvNguyenLieu.Columns.Add(cotTonKho);
+            dgvNguyenLieu.Columns.Add(cotDinhMuc);
+            var cotTinhTrang = new DataGridViewTextBoxColumn
+            {
+                Name = "TinhTrang",
+                HeaderText = "Tình trạng",
+                FillWeight = 22F,
+                ReadOnly = true,
+                SortMode = DataGridViewColumnSortMode.NotSortable
+            };
+            dgvNguyenLieu.Columns.Add(cotTinhTrang);
             dgvNguyenLieu.SelectionChanged += dgvNguyenLieu_SelectionChanged;
             dgvNguyenLieu.RowPrePaint += dgvNguyenLieu_RowPrePaint;
+            dgvNguyenLieu.CellPainting += dgvNguyenLieu_CellPainting;
+            dgvNguyenLieu.CellToolTipTextNeeded += dgvNguyenLieu_CellToolTipTextNeeded;
+            pnlTrai.Controls.Add(dgvNguyenLieu);
 
-            split.Panel1.Controls.Add(dgvNguyenLieu);
-            split.Panel1.Controls.Add(timPanel);
-
-            // Bảng nhập liệu bên phải
-            var fields = new TableLayoutPanel
+            var pnlPhai = new BorderPanel
             {
-                Dock = DockStyle.Top,
-                Padding = new Padding(12),
-                ColumnCount = 1,
-                RowCount = 0,
-                AutoSize = true
+                Name = "pnlThongTin",
+                Location = new Point(745, 100),
+                Size = new Size(325, 550),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right | AnchorStyles.Bottom,
+                BackColor = Color.White
             };
-            fields.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-
-            ThemTruong(fields, "Mã nguyên liệu", txtMaNL, true);
-            ThemTruong(fields, "Tên nguyên liệu (*)", txtTenNL, false);
-            ThemTruong(fields, "Đơn vị tính (*)", txtDVT, false);
-            ThemTruong(fields, "Tồn kho (*)", txtTonKho, false);
-            ThemTruong(fields, "Định mức tối thiểu (*)", txtDinhMuc, false);
+            pnlPhai.Controls.Add(new Label
+            {
+                Name = "lblThongTinNguyenLieu",
+                Text = "THÔNG TIN NGUYÊN LIỆU",
+                Location = new Point(20, 15),
+                Size = new Size(285, 22),
+                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(232, 101, 26),
+                AutoSize = false
+            });
+            ThemTruong(pnlPhai, "Mã nguyên liệu", txtMaNL, true, 55);
+            ThemTruong(pnlPhai, "Tên nguyên liệu (*)", txtTenNL, false, 115);
+            ThemTruong(pnlPhai, "Đơn vị tính (*)", txtDVT, false, 175);
+            ThemTruong(pnlPhai, "Tồn kho (*)", txtTonKho, false, 235);
+            ThemTruong(pnlPhai, "Định mức tối thiểu (*)", txtDinhMuc, false, 295);
 
             txtTenNL.MaxLength = 100;
             txtDVT.MaxLength = 20;
 
-            // Hàng nút thao tác
-            var nutPanel = new FlowLayoutPanel
+            var tlpNut = new TableLayoutPanel
             {
-                Dock = DockStyle.Top,
-                Height = 90,
-                Padding = new Padding(8),
-                WrapContents = true
+                Name = "tlpNutNguyenLieu",
+                Location = new Point(20, 365),
+                Size = new Size(285, 88),
+                ColumnCount = 3,
+                RowCount = 3,
+                Margin = Padding.Empty,
+                Padding = Padding.Empty,
+                BackColor = Color.White
             };
-            foreach (Button btn in new[] { btnThem, btnSua, btnXoa, btnLuu, btnHuy })
+            for (int i = 0; i < 3; i++)
+                tlpNut.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3333F));
+            tlpNut.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));
+            tlpNut.RowStyles.Add(new RowStyle(SizeType.Absolute, 8F));
+            tlpNut.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));
+            CauHinhNut(btnThem, Color.FromArgb(232, 101, 26));
+            CauHinhNut(btnSua, Color.FromArgb(37, 99, 235));
+            CauHinhNut(btnXoa, Color.FromArgb(220, 38, 38));
+            CauHinhNut(btnLuu, Color.FromArgb(22, 163, 74));
+            CauHinhNut(btnHuy, Color.FromArgb(107, 114, 128));
+            GanNut(tlpNut, btnThem, 0, 0, 1);
+            GanNut(tlpNut, btnSua, 1, 0, 1);
+            GanNut(tlpNut, btnXoa, 2, 0, 1);
+            GanNut(tlpNut, btnLuu, 0, 2, 2);
+            GanNut(tlpNut, btnHuy, 2, 2, 1);
+            pnlPhai.Controls.Add(tlpNut);
+
+            pnlMucTonKho = new Panel
             {
-                btn.Width = 100;
-                btn.Height = 38;
-                btn.Margin = new Padding(5);
-                nutPanel.Controls.Add(btn);
-            }
+                Name = "pnlMucTonKho",
+                Location = new Point(20, 467),
+                Size = new Size(285, 70),
+                BackColor = Color.White,
+                Visible = false
+            };
+            lblMucTonKho = new Label
+            {
+                Name = "lblMucTonKho",
+                Text = "Mức tồn kho",
+                Location = new Point(0, 0),
+                Size = new Size(285, 16),
+                Font = new Font("Segoe UI", 9F),
+                ForeColor = Color.FromArgb(107, 114, 128),
+                AutoSize = false
+            };
+            prgMucTonKho = new StockProgressBar
+            {
+                Name = "prgMucTonKho",
+                Location = new Point(0, 21),
+                Size = new Size(285, 10)
+            };
+            lblChiTietTonKho = new Label
+            {
+                Name = "lblChiTietTonKho",
+                Text = "",
+                Location = new Point(0, 36),
+                Size = new Size(285, 30),
+                Font = new Font("Segoe UI", 9F),
+                ForeColor = Color.FromArgb(107, 114, 128),
+                AutoSize = false,
+                AutoEllipsis = true
+            };
+            pnlMucTonKho.Controls.Add(lblMucTonKho);
+            pnlMucTonKho.Controls.Add(prgMucTonKho);
+            pnlMucTonKho.Controls.Add(lblChiTietTonKho);
+            pnlPhai.Controls.Add(pnlMucTonKho);
 
-            split.Panel2.Controls.Add(nutPanel);
-            split.Panel2.Controls.Add(fields);
-
-            // Controls.Add split vào Form trước khi thiết lập kích thước chi tiết trong Load
-            Controls.Add(split);
-            Controls.Add(GiaoDien.TaoTieuDe("QUẢN LÝ NGUYÊN LIỆU"));
+            Controls.Add(pnlTrai);
+            Controls.Add(pnlPhai);
+            Controls.Add(pnlHeader);
 
             btnThem.Click += btnThem_Click;
             btnSua.Click += btnSua_Click;
@@ -146,41 +341,124 @@ namespace QuanLyCuaHangDoAn.GUI
             CapNhatTrangThaiNut();
         }
 
-        private static void ThemTruong(TableLayoutPanel panel, string nhan, Control control, bool chiDoc)
+        private Panel TaoTheThongKe(string tenPanel, string nhan, string tenGiaTri, Color mauGiaTri)
         {
-            int row = panel.RowCount;
-            panel.RowCount += 2;
-            panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 26));
+            var panel = new Panel
+            {
+                Name = tenPanel,
+                Dock = DockStyle.Fill,
+                Margin = Padding.Empty,
+                BackColor = Color.FromArgb(249, 250, 251)
+            };
+            var giaTri = new Label
+            {
+                Name = tenGiaTri,
+                Text = "0",
+                Location = new Point(4, 2),
+                Size = new Size(145, 32),
+                Font = new Font("Segoe UI", 18F, FontStyle.Bold),
+                ForeColor = mauGiaTri,
+                TextAlign = ContentAlignment.MiddleCenter,
+                AutoSize = false,
+                AutoEllipsis = true
+            };
+            panel.Controls.Add(giaTri);
+            panel.Controls.Add(new Label
+            {
+                Name = "lblNhan" + tenGiaTri.Substring(3),
+                Text = nhan,
+                Location = new Point(4, 34),
+                Size = new Size(145, 20),
+                Font = new Font("Segoe UI", 9F),
+                ForeColor = Color.FromArgb(107, 114, 128),
+                TextAlign = ContentAlignment.MiddleCenter,
+                AutoSize = false,
+                AutoEllipsis = true
+            });
+            if (tenGiaTri == "lblTongNguyenLieu")
+                lblTongNguyenLieu = giaTri;
+            else if (tenGiaTri == "lblDuHang")
+                lblDuHang = giaTri;
+            else if (tenGiaTri == "lblSapHet")
+                lblSapHet = giaTri;
+            else
+                lblHetHang = giaTri;
+            return panel;
+        }
+
+        private static DataGridViewTextBoxColumn TaoCotSo(string ten, string tieuDe, float trongSo)
+        {
+            return new DataGridViewTextBoxColumn
+            {
+                Name = ten,
+                DataPropertyName = ten,
+                HeaderText = tieuDe,
+                FillWeight = trongSo,
+                SortMode = DataGridViewColumnSortMode.NotSortable,
+                DefaultCellStyle =
+                {
+                    Alignment = DataGridViewContentAlignment.MiddleRight,
+                    Format = "#,##0.##",
+                    FormatProvider = CultureInfo.GetCultureInfo("vi-VN")
+                },
+                HeaderCell =
+                {
+                    Style = { Alignment = DataGridViewContentAlignment.MiddleRight }
+                }
+            };
+        }
+
+        private static void ThemTruong(Panel panel, string nhan, Control control, bool chiDoc, int y)
+        {
             panel.Controls.Add(new Label
             {
                 Name = "lbl" + control.Name.Substring(3),
                 Text = nhan,
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleLeft,
-                Font = GiaoDien.FontDam,
-                ForeColor = Color.FromArgb(60, 60, 60)
-            }, 0, row);
-
-            panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 34));
-            control.Dock = DockStyle.Fill;
-            control.Font = GiaoDien.FontThuong;
+                Location = new Point(20, y),
+                Size = new Size(285, 16),
+                Font = new Font("Segoe UI", 9F),
+                ForeColor = Color.FromArgb(107, 114, 128),
+                AutoSize = false
+            });
+            control.Location = new Point(20, y + 20);
+            control.Size = new Size(285, 34);
             if (control is TextBox)
             {
-                ((TextBox)control).ReadOnly = chiDoc;
+                TextBox textBox = (TextBox)control;
+                textBox.AutoSize = false;
+                textBox.BorderStyle = BorderStyle.FixedSingle;
+                textBox.Font = new Font("Segoe UI", 10.5F);
+                textBox.ReadOnly = chiDoc;
+                textBox.BackColor = chiDoc ? Color.FromArgb(243, 244, 246) : Color.White;
             }
-            panel.Controls.Add(control, 0, row + 1);
+            panel.Controls.Add(control);
+        }
+
+        private static void CauHinhNut(Button nut, Color nen)
+        {
+            nut.Size = new Size(89, 40);
+            nut.Margin = new Padding(4, 0, 4, 0);
+            nut.BackColor = nen;
+            nut.ForeColor = Color.White;
+            nut.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+            nut.FlatStyle = FlatStyle.Flat;
+            nut.FlatAppearance.BorderSize = 0;
+            nut.FlatAppearance.MouseOverBackColor = ControlPaint.Dark(nen, 0.1F);
+            nut.FlatAppearance.MouseDownBackColor = ControlPaint.Dark(nen, 0.18F);
+            nut.Cursor = Cursors.Hand;
+            nut.UseVisualStyleBackColor = false;
+        }
+
+        private static void GanNut(TableLayoutPanel bangNut, Button nut, int cot, int dong, int soCot)
+        {
+            nut.Dock = DockStyle.Fill;
+            bangNut.Controls.Add(nut, cot, dong);
+            if (soCot > 1)
+                bangNut.SetColumnSpan(nut, soCot);
         }
 
         private void frmNguyenLieu_Load(object sender, EventArgs e)
         {
-            // Thiết lập kích thước SplitContainer an toàn trên màn hình scale cao
-            if (split.Width > 850)
-            {
-                split.Panel1MinSize = 420;
-                split.Panel2MinSize = 350;
-                split.SplitterDistance = 650;
-            }
-
             try
             {
                 if (!PhienDangNhap.IsLoggedIn || PhienDangNhap.ChucVu != "Admin")
@@ -209,27 +487,158 @@ namespace QuanLyCuaHangDoAn.GUI
         private void HienThiDuLieu(DataTable nguon)
         {
             dgvNguyenLieu.DataSource = nguon != null ? nguon.Copy() : null;
-            GiaoDien.LamDepBang(dgvNguyenLieu, new Dictionary<string, string>
+            foreach (DataGridViewRow dong in dgvNguyenLieu.Rows)
             {
-                { "MaNL", "Mã NL" },
-                { "TenNL", "Tên nguyên liệu" },
-                { "DVT", "Đơn vị tính" },
-                { "TonKho", "Tồn kho" },
-                { "DinhMuc", "Định mức" }
-            });
-
-            if (dgvNguyenLieu.Columns.Contains("TonKho"))
-            {
-                dgvNguyenLieu.Columns["TonKho"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
-                dgvNguyenLieu.Columns["TonKho"].DefaultCellStyle.Format = "#,##0.##";
-            }
-            if (dgvNguyenLieu.Columns.Contains("DinhMuc"))
-            {
-                dgvNguyenLieu.Columns["DinhMuc"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
-                dgvNguyenLieu.Columns["DinhMuc"].DefaultCellStyle.Format = "#,##0.##";
+                dong.Height = 44;
+                decimal tonKho;
+                decimal dinhMuc;
+                dong.Cells["TinhTrang"].Value =
+                    ThuLaySo(dong.Cells["TonKho"].Value, out tonKho)
+                    && ThuLaySo(dong.Cells["DinhMuc"].Value, out dinhMuc)
+                        ? LayTinhTrang(tonKho, dinhMuc)
+                        : "--";
             }
 
+            CapNhatThongKe();
+            CapNhatThanhTonKho();
             CapNhatTrangThaiNut();
+        }
+
+        private static string LayTinhTrang(decimal tonKho, decimal dinhMuc)
+        {
+            if (tonKho <= 0)
+                return "Hết hàng";
+            if (tonKho <= dinhMuc)
+                return "Sắp hết";
+            return "Đủ hàng";
+        }
+
+        private void CapNhatThongKe()
+        {
+            if (duLieu == null)
+                return;
+
+            int duHang = 0;
+            int sapHet = 0;
+            int hetHang = 0;
+            foreach (DataRow dong in duLieu.Rows)
+            {
+                decimal tonKho;
+                decimal dinhMuc;
+                if (!ThuLaySo(dong["TonKho"], out tonKho)
+                    || !ThuLaySo(dong["DinhMuc"], out dinhMuc))
+                    continue;
+
+                if (tonKho > dinhMuc)
+                    duHang++;
+                if (tonKho <= dinhMuc)
+                    sapHet++;
+                if (tonKho <= 0)
+                    hetHang++;
+            }
+
+            lblTongNguyenLieu.Text = duLieu.Rows.Count.ToString();
+            lblDuHang.Text = duHang.ToString();
+            lblSapHet.Text = sapHet.ToString();
+            lblHetHang.Text = hetHang.ToString();
+        }
+
+        private void CapNhatThanhTonKho()
+        {
+            DataGridViewRow dong = dgvNguyenLieu.CurrentRow;
+            if (dong == null || dgvNguyenLieu.SelectedRows.Count == 0 || cheDo == "them")
+            {
+                pnlMucTonKho.Visible = false;
+                return;
+            }
+
+            decimal tonKho;
+            decimal dinhMuc;
+            if (!ThuLaySo(dong.Cells["TonKho"].Value, out tonKho)
+                || !ThuLaySo(dong.Cells["DinhMuc"].Value, out dinhMuc))
+            {
+                pnlMucTonKho.Visible = false;
+                return;
+            }
+
+            prgMucTonKho.DatMucTon(tonKho, dinhMuc);
+            string dvt = Convert.ToString(dong.Cells["DVT"].Value);
+            lblChiTietTonKho.Text = "Còn " + DinhDangSo(tonKho) + " " + dvt
+                + " • định mức " + DinhDangSo(dinhMuc);
+            pnlMucTonKho.Visible = true;
+        }
+
+        private static string DinhDangSo(decimal giaTri)
+        {
+            return giaTri.ToString("#,##0.##", CultureInfo.GetCultureInfo("vi-VN"));
+        }
+
+        private void dgvNguyenLieu_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex < 0)
+                return;
+
+            if (dgvNguyenLieu.Columns[e.ColumnIndex].Name == "TinhTrang")
+            {
+                string tinhTrang = Convert.ToString(e.FormattedValue);
+                Color mauNen = tinhTrang == "Đủ hàng"
+                    ? Color.FromArgb(22, 163, 74)
+                    : tinhTrang == "Sắp hết"
+                        ? Color.FromArgb(220, 38, 38)
+                        : tinhTrang == "Hết hàng"
+                            ? Color.FromArgb(127, 29, 29)
+                            : Color.FromArgb(107, 114, 128);
+
+                e.PaintBackground(e.CellBounds, true);
+                Rectangle vienThuoc = new Rectangle(
+                    e.CellBounds.Left + (e.CellBounds.Width - 80) / 2,
+                    e.CellBounds.Top + (e.CellBounds.Height - 22) / 2, 80, 22);
+                GraphicsState trangThaiDoHoa = e.Graphics.Save();
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                using (GraphicsPath duongVien = TaoDuongVien(vienThuoc, 22))
+                using (SolidBrush brush = new SolidBrush(mauNen))
+                    e.Graphics.FillPath(brush, duongVien);
+                e.Graphics.Restore(trangThaiDoHoa);
+                using (Font font = new Font("Segoe UI", 8.5F, FontStyle.Bold))
+                    TextRenderer.DrawText(e.Graphics, tinhTrang, font, vienThuoc, Color.White,
+                        TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter |
+                        TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix);
+                e.Paint(e.CellBounds, DataGridViewPaintParts.Border);
+                e.Handled = true;
+                return;
+            }
+
+            e.PaintBackground(e.CellBounds, true);
+            Rectangle vungChu = e.CellBounds;
+            vungChu.X += e.CellStyle.Padding.Left;
+            vungChu.Width -= e.CellStyle.Padding.Left + e.CellStyle.Padding.Right;
+            TextFormatFlags canLe = dgvNguyenLieu.Columns[e.ColumnIndex].Name == "TonKho"
+                || dgvNguyenLieu.Columns[e.ColumnIndex].Name == "DinhMuc"
+                    ? TextFormatFlags.Right
+                    : TextFormatFlags.Left;
+            TextRenderer.DrawText(e.Graphics, Convert.ToString(e.FormattedValue), e.CellStyle.Font,
+                vungChu, e.CellStyle.ForeColor, canLe | TextFormatFlags.VerticalCenter |
+                TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
+            e.Paint(e.CellBounds, DataGridViewPaintParts.Border);
+            e.Handled = true;
+        }
+
+        private void dgvNguyenLieu_CellToolTipTextNeeded(object sender, DataGridViewCellToolTipTextNeededEventArgs e)
+        {
+            if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
+                e.ToolTipText = Convert.ToString(dgvNguyenLieu.Rows[e.RowIndex].Cells[e.ColumnIndex].FormattedValue);
+        }
+
+        private static GraphicsPath TaoDuongVien(Rectangle hinh, int duongKinh)
+        {
+            int cung = Math.Min(duongKinh, Math.Min(hinh.Width, hinh.Height));
+            GraphicsPath duongVien = new GraphicsPath();
+            duongVien.AddArc(hinh.Left, hinh.Top, cung, cung, 180, 90);
+            duongVien.AddArc(hinh.Right - cung, hinh.Top, cung, cung, 270, 90);
+            duongVien.AddArc(hinh.Right - cung, hinh.Bottom - cung, cung, cung, 0, 90);
+            duongVien.AddArc(hinh.Left, hinh.Bottom - cung, cung, cung, 90, 90);
+            duongVien.CloseFigure();
+            return duongVien;
         }
 
         private void dgvNguyenLieu_RowPrePaint(object sender, DataGridViewRowPrePaintEventArgs e)
@@ -254,11 +663,11 @@ namespace QuanLyCuaHangDoAn.GUI
                 return;
             }
 
-            dong.DefaultCellStyle.BackColor = Color.FromArgb(255, 230, 230);
-            dong.DefaultCellStyle.ForeColor = GiaoDien.MauDo;
+            dong.DefaultCellStyle.BackColor = Color.FromArgb(254, 242, 242);
+            dong.DefaultCellStyle.ForeColor = Color.FromArgb(153, 27, 27);
             dong.DefaultCellStyle.Font = GiaoDien.FontDam;
-            dong.DefaultCellStyle.SelectionBackColor = Color.FromArgb(235, 90, 80);
-            dong.DefaultCellStyle.SelectionForeColor = Color.White;
+            dong.DefaultCellStyle.SelectionBackColor = Color.FromArgb(254, 242, 242);
+            dong.DefaultCellStyle.SelectionForeColor = Color.FromArgb(153, 27, 27);
         }
 
         private static bool ThuLaySo(object giaTri, out decimal so)
@@ -279,14 +688,20 @@ namespace QuanLyCuaHangDoAn.GUI
 
         private void dgvNguyenLieu_SelectionChanged(object sender, EventArgs e)
         {
-            if (!string.IsNullOrEmpty(cheDo) || choDongBo || dgvNguyenLieu.CurrentRow == null)
+            if (!string.IsNullOrEmpty(cheDo) || choDongBo)
                 return;
+            if (dgvNguyenLieu.CurrentRow == null)
+            {
+                CapNhatThanhTonKho();
+                return;
+            }
 
             txtMaNL.Text = Convert.ToString(dgvNguyenLieu.CurrentRow.Cells["MaNL"].Value);
             txtTenNL.Text = Convert.ToString(dgvNguyenLieu.CurrentRow.Cells["TenNL"].Value);
             txtDVT.Text = Convert.ToString(dgvNguyenLieu.CurrentRow.Cells["DVT"].Value);
             txtTonKho.Text = Convert.ToString(dgvNguyenLieu.CurrentRow.Cells["TonKho"].Value);
             txtDinhMuc.Text = Convert.ToString(dgvNguyenLieu.CurrentRow.Cells["DinhMuc"].Value);
+            CapNhatThanhTonKho();
         }
 
         private void btnThem_Click(object sender, EventArgs e)
@@ -303,6 +718,7 @@ namespace QuanLyCuaHangDoAn.GUI
                 txtTonKho.Text = "0";
                 txtDinhMuc.Text = "0";
                 cheDo = "them";
+                CapNhatThanhTonKho();
                 CapNhatTrangThaiNut();
                 txtTenNL.Focus();
             }
@@ -619,6 +1035,11 @@ namespace QuanLyCuaHangDoAn.GUI
             txtDVT.ReadOnly = !dangChinhSua;
             txtTonKho.ReadOnly = !dangChinhSua;
             txtDinhMuc.ReadOnly = !dangChinhSua;
+            txtMaNL.BackColor = Color.FromArgb(243, 244, 246);
+            txtTenNL.BackColor = txtTenNL.ReadOnly ? Color.FromArgb(243, 244, 246) : Color.White;
+            txtDVT.BackColor = txtDVT.ReadOnly ? Color.FromArgb(243, 244, 246) : Color.White;
+            txtTonKho.BackColor = txtTonKho.ReadOnly ? Color.FromArgb(243, 244, 246) : Color.White;
+            txtDinhMuc.BackColor = txtDinhMuc.ReadOnly ? Color.FromArgb(243, 244, 246) : Color.White;
 
             btnLuu.Enabled = dangChinhSua || choDongBo;
             btnHuy.Enabled = dangChinhSua && !choDongBo;
@@ -634,6 +1055,65 @@ namespace QuanLyCuaHangDoAn.GUI
         {
             MessageBox.Show(noiDung + ".\r\n\r\n" + ex.Message, "Lỗi",
                 MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+
+        private sealed class BorderPanel : Panel
+        {
+            public BorderPanel()
+            {
+                SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer |
+                    ControlStyles.ResizeRedraw, true);
+            }
+
+            protected override void OnPaint(PaintEventArgs e)
+            {
+                base.OnPaint(e);
+                using (Pen vien = new Pen(Color.FromArgb(229, 231, 235)))
+                    e.Graphics.DrawRectangle(vien, 0, 0, Width - 1, Height - 1);
+            }
+        }
+
+        private sealed class StockProgressBar : Control
+        {
+            private double tiLe;
+            private Color mauThanh = Color.FromArgb(22, 163, 74);
+
+            public StockProgressBar()
+            {
+                BackColor = Color.FromArgb(229, 231, 235);
+                SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer |
+                    ControlStyles.ResizeRedraw | ControlStyles.UserPaint, true);
+            }
+
+            public void DatMucTon(decimal tonKho, decimal dinhMuc)
+            {
+                mauThanh = tonKho <= dinhMuc
+                    ? Color.FromArgb(220, 38, 38)
+                    : Color.FromArgb(22, 163, 74);
+                if (dinhMuc <= 0)
+                    tiLe = tonKho > 0 ? 1 : 0;
+                else
+                    tiLe = Math.Max(0, Math.Min(1, (double)tonKho / ((double)dinhMuc * 3d)));
+                Invalidate();
+            }
+
+            protected override void OnPaint(PaintEventArgs e)
+            {
+                base.OnPaint(e);
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                Rectangle nen = new Rectangle(0, 0, Width, Height);
+                using (GraphicsPath duongNen = TaoDuongVien(nen, Height))
+                using (SolidBrush brushNen = new SolidBrush(BackColor))
+                    e.Graphics.FillPath(brushNen, duongNen);
+
+                int rongThanh = (int)Math.Round(Width * tiLe);
+                if (rongThanh <= 0)
+                    return;
+                Rectangle thanh = new Rectangle(0, 0, Math.Min(Width, rongThanh), Height);
+                using (GraphicsPath duongThanh = TaoDuongVien(thanh, Height))
+                using (SolidBrush brushThanh = new SolidBrush(mauThanh))
+                    e.Graphics.FillPath(brushThanh, duongThanh);
+            }
         }
     }
 }

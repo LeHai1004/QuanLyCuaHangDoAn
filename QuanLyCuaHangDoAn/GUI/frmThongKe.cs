@@ -26,6 +26,8 @@ namespace QuanLyCuaHangDoAn.GUI
         private readonly DataGridView dgvDoanhThuTheoNgay = new DataGridView();
         private readonly DataGridView dgvTopMon = new DataGridView();
         private readonly Chart chartTopMon = new Chart();
+        private Label lblKhongDuLieu;
+        private TopMonPanel pnlChiTietTop5;
 
         private readonly CultureInfo viVn = new CultureInfo("vi-VN");
 
@@ -38,233 +40,284 @@ namespace QuanLyCuaHangDoAn.GUI
         private void KhoiTaoGiaoDien()
         {
             Text = "Thống kê doanh thu và món bán chạy";
-            StartPosition = FormStartPosition.CenterScreen;
-            ClientSize = new Size(1280, 780);
-            MinimumSize = new Size(1050, 650);
-            BackColor = Color.White;
-            Font = GiaoDien.FontThuong;
+            StartPosition = FormStartPosition.CenterParent;
+            ClientSize = new Size(1280, 720);
+            BackColor = Color.FromArgb(245, 246, 248);
+            Font = new Font("Segoe UI", 10F);
+            DoubleBuffered = true;
 
-            // Tiêu đề form
-            Label lblTieuDe = GiaoDien.TaoTieuDe("THỐNG KÊ DOANH THU & TOP 5 MÓN BÁN CHẠY");
-            Controls.Add(lblTieuDe);
-
-            // Khung chọn thời gian (Bộ lọc)
-            Panel pnlBoLoc = new Panel
+            var pnlHeader = new Panel
             {
+                Name = "pnlHeader",
                 Dock = DockStyle.Top,
-                Height = 60,
-                BackColor = GiaoDien.MauNenNhat,
-                Padding = new Padding(16, 12, 16, 12)
+                Height = 70,
+                BackColor = Color.FromArgb(232, 101, 26)
             };
-
-            Label lblTu = new Label
+            pnlHeader.Controls.Add(new Label
             {
-                Text = "Từ ngày:",
-                Font = GiaoDien.FontDam,
-                AutoSize = true,
-                Location = new Point(16, 18)
-            };
+                Name = "lblTieuDe",
+                Text = "THỐNG KÊ",
+                Location = new Point(30, 10),
+                Size = new Size(500, 27),
+                Font = new Font("Segoe UI", 18F, FontStyle.Bold),
+                ForeColor = Color.White,
+                AutoSize = false
+            });
+            pnlHeader.Controls.Add(new Label
+            {
+                Name = "lblPhuDe",
+                Text = "Doanh thu và món bán chạy",
+                Location = new Point(32, 42),
+                Size = new Size(500, 18),
+                Font = new Font("Segoe UI", 9.5F),
+                ForeColor = Color.White,
+                AutoSize = false
+            });
 
+            var pnlBoLoc = new BorderPanel
+            {
+                Name = "pnlBoLoc",
+                Location = new Point(20, 85),
+                Size = new Size(1240, 64),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
+                BackColor = Color.White
+            };
+            pnlBoLoc.Controls.Add(TaoNhanBoLoc("Từ ngày", "lblTuNgay", new Point(15, 24), 42));
+            dtpTuNgay.Name = "dtpTuNgay";
             dtpTuNgay.Format = DateTimePickerFormat.Custom;
             dtpTuNgay.CustomFormat = "dd/MM/yyyy";
-            dtpTuNgay.Size = new Size(130, 30);
-            dtpTuNgay.Location = new Point(85, 14);
+            dtpTuNgay.Size = new Size(140, 32);
+            dtpTuNgay.Location = new Point(62, 16);
             dtpTuNgay.Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+            pnlBoLoc.Controls.Add(dtpTuNgay);
 
-            Label lblDen = new Label
-            {
-                Text = "Đến ngày:",
-                Font = GiaoDien.FontDam,
-                AutoSize = true,
-                Location = new Point(230, 18)
-            };
-
+            pnlBoLoc.Controls.Add(TaoNhanBoLoc("Đến ngày", "lblDenNgay", new Point(222, 24), 50));
+            dtpDenNgay.Name = "dtpDenNgay";
             dtpDenNgay.Format = DateTimePickerFormat.Custom;
             dtpDenNgay.CustomFormat = "dd/MM/yyyy";
-            dtpDenNgay.Size = new Size(130, 30);
-            dtpDenNgay.Location = new Point(305, 14);
+            dtpDenNgay.Size = new Size(140, 32);
+            dtpDenNgay.Location = new Point(278, 16);
             dtpDenNgay.Value = DateTime.Today;
+            pnlBoLoc.Controls.Add(dtpDenNgay);
 
-            btnThongKe.Size = new Size(130, 34);
-            btnThongKe.Location = new Point(455, 12);
+            CauHinhNutChinh(btnThongKe);
+            btnThongKe.Name = "btnThongKe";
+            btnThongKe.Text = "Xem thống kê";
+            btnThongKe.Size = new Size(140, 36);
+            btnThongKe.Location = new Point(450, 14);
             btnThongKe.Click += btnThongKe_Click;
+            pnlBoLoc.Controls.Add(btnThongKe);
 
-            btnHomNay.Size = new Size(90, 34);
-            btnHomNay.Location = new Point(600, 12);
+            CauHinhNutLoc(btnHomNay, "btnHomNay", "Hôm nay", new Point(614, 14));
+            CauHinhNutLoc(btnBayNgay, "btnBayNgay", "7 ngày qua", new Point(732, 14));
+            CauHinhNutLoc(btnThangNay, "btnThangNay", "Tháng này", new Point(850, 14));
             btnHomNay.Click += (s, e) =>
             {
                 dtpTuNgay.Value = DateTime.Today;
                 dtpDenNgay.Value = DateTime.Today;
                 TaiDuLieuThongKe();
             };
-
-            btnBayNgay.Size = new Size(100, 34);
-            btnBayNgay.Location = new Point(700, 12);
             btnBayNgay.Click += (s, e) =>
             {
                 dtpTuNgay.Value = DateTime.Today.AddDays(-6);
                 dtpDenNgay.Value = DateTime.Today;
                 TaiDuLieuThongKe();
             };
-
-            btnThangNay.Size = new Size(95, 34);
-            btnThangNay.Location = new Point(810, 12);
             btnThangNay.Click += (s, e) =>
             {
                 dtpTuNgay.Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
                 dtpDenNgay.Value = DateTime.Today;
                 TaiDuLieuThongKe();
             };
-
-            pnlBoLoc.Controls.Add(lblTu);
-            pnlBoLoc.Controls.Add(dtpTuNgay);
-            pnlBoLoc.Controls.Add(lblDen);
-            pnlBoLoc.Controls.Add(dtpDenNgay);
-            pnlBoLoc.Controls.Add(btnThongKe);
             pnlBoLoc.Controls.Add(btnHomNay);
             pnlBoLoc.Controls.Add(btnBayNgay);
             pnlBoLoc.Controls.Add(btnThangNay);
-            Controls.Add(pnlBoLoc);
 
-            // Khung tổng quan (Thẻ số liệu tóm tắt)
-            Panel pnlTongQuan = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 90,
-                BackColor = Color.White,
-                Padding = new Padding(16, 8, 16, 8)
-            };
+            Controls.Add(pnlHeader);
+            Controls.Add(pnlBoLoc);
+            pnlHeader.BringToFront();
 
             var tblThe = new TableLayoutPanel
             {
-                Dock = DockStyle.Fill,
-                ColumnCount = 3,
-                RowCount = 1
-            };
-            tblThe.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
-            tblThe.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.34f));
-            tblThe.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
-
-            Panel theDoanhThu = TaoTheChiSo("TỔNG DOANH THU", lblTongDoanhThu, GiaoDien.MauChinhDam);
-            Panel theHoaDon = TaoTheChiSo("SỐ HÓA ĐƠN ĐÃ THANH TOÁN", lblSoHoaDon, Color.FromArgb(20, 120, 200));
-            Panel theTrungBinh = TaoTheChiSo("DOANH THU TRUNG BÌNH / HÓA ĐƠN", lblDoanhThuTB, GiaoDien.MauXanh);
-
-            tblThe.Controls.Add(theDoanhThu, 0, 0);
-            tblThe.Controls.Add(theHoaDon, 1, 0);
-            tblThe.Controls.Add(theTrungBinh, 2, 0);
-            pnlTongQuan.Controls.Add(tblThe);
-            Controls.Add(pnlTongQuan);
-
-            // Khu vực nội dung chính: Bên trái bảng Doanh thu theo ngày, Bên phải Top 5 món + Biểu đồ
-            var tblNoiDung = new TableLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                ColumnCount = 2,
+                Name = "tlpChiSo",
+                Location = new Point(20, 164),
+                Size = new Size(1240, 100),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
+                ColumnCount = 5,
                 RowCount = 1,
-                Padding = new Padding(16, 8, 16, 16)
+                Margin = Padding.Empty,
+                Padding = Padding.Empty
             };
-            tblNoiDung.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 42f));
-            tblNoiDung.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 58f));
+            tblThe.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.333F));
+            tblThe.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 15F));
+            tblThe.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.333F));
+            tblThe.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 15F));
+            tblThe.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.334F));
+            tblThe.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            tblThe.Controls.Add(TaoTheChiSo("pnlTongDoanhThu", "TỔNG DOANH THU", lblTongDoanhThu,
+                Color.FromArgb(232, 101, 26)), 0, 0);
+            tblThe.Controls.Add(TaoTheChiSo("pnlSoHoaDon", "SỐ HÓA ĐƠN ĐÃ THANH TOÁN", lblSoHoaDon,
+                Color.FromArgb(37, 99, 235)), 2, 0);
+            tblThe.Controls.Add(TaoTheChiSo("pnlDoanhThuTrungBinh", "DOANH THU TRUNG BÌNH / HÓA ĐƠN", lblDoanhThuTB,
+                Color.FromArgb(22, 163, 74)), 4, 0);
+            Controls.Add(tblThe);
 
-            // Cột trái: Doanh thu theo ngày
-            Panel pnlTrai = new Panel { Dock = DockStyle.Fill, Padding = new Padding(0, 0, 8, 0) };
-            Label lblTieuDeBangNgay = new Label
+            var pnlTopMon = new BorderPanel
             {
-                Text = "DOANH THU THEO TỪNG NGÀY",
-                Dock = DockStyle.Top,
-                Height = 36,
-                BackColor = GiaoDien.MauTieuDeBang,
-                ForeColor = Color.FromArgb(120, 50, 0),
-                Font = GiaoDien.FontDam,
-                TextAlign = ContentAlignment.MiddleLeft,
-                Padding = new Padding(8, 0, 0, 0)
+                Name = "pnlTopMon",
+                Location = new Point(20, 279),
+                Size = new Size(740, 421),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom,
+                BackColor = Color.White
             };
-            dgvDoanhThuTheoNgay.Dock = DockStyle.Fill;
-            pnlTrai.Controls.Add(dgvDoanhThuTheoNgay);
-            pnlTrai.Controls.Add(lblTieuDeBangNgay);
-
-            // Cột phải: Top 5 món bán chạy (bảng phía trên, biểu đồ phía dưới)
-            Panel pnlPhai = new Panel { Dock = DockStyle.Fill, Padding = new Padding(8, 0, 0, 0) };
-            var tblPhai = new TableLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                ColumnCount = 1,
-                RowCount = 2
-            };
-            tblPhai.RowStyles.Add(new RowStyle(SizeType.Percent, 48f));
-            tblPhai.RowStyles.Add(new RowStyle(SizeType.Percent, 52f));
-
-            Panel pnlTopMon = new Panel { Dock = DockStyle.Fill, Padding = new Padding(0, 0, 0, 6) };
-            Label lblTieuDeTopMon = new Label
-            {
-                Text = "TOP 5 MÓN ĂN BÁN CHẠY NHẤT",
-                Dock = DockStyle.Top,
-                Height = 36,
-                BackColor = GiaoDien.MauTieuDeBang,
-                ForeColor = Color.FromArgb(120, 50, 0),
-                Font = GiaoDien.FontDam,
-                TextAlign = ContentAlignment.MiddleLeft,
-                Padding = new Padding(8, 0, 0, 0)
-            };
-            dgvTopMon.Dock = DockStyle.Fill;
-            pnlTopMon.Controls.Add(dgvTopMon);
-            pnlTopMon.Controls.Add(lblTieuDeTopMon);
-
-            Panel pnlBieuDo = new Panel { Dock = DockStyle.Fill, Padding = new Padding(0, 6, 0, 0) };
-            chartTopMon.Dock = DockStyle.Fill;
+            pnlTopMon.Controls.Add(TaoNhan("TOP 5 MÓN BÁN CHẠY (THEO SỐ LƯỢNG)",
+                "lblTieuDeTopMon", new Point(15, 12), new Size(710, 20)));
+            chartTopMon.Name = "chartTopMon";
+            chartTopMon.Location = new Point(15, 45);
+            chartTopMon.Size = new Size(710, 360);
+            chartTopMon.Anchor = AnchorStyles.Top | AnchorStyles.Left |
+                AnchorStyles.Right | AnchorStyles.Bottom;
             chartTopMon.BackColor = Color.White;
-            pnlBieuDo.Controls.Add(chartTopMon);
+            pnlTopMon.Controls.Add(chartTopMon);
+            lblKhongDuLieu = new Label
+            {
+                Name = "lblKhongDuLieu",
+                Text = "Không có dữ liệu trong khoảng này",
+                Location = new Point(15, 45),
+                Size = new Size(710, 360),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left |
+                    AnchorStyles.Right | AnchorStyles.Bottom,
+                Font = new Font("Segoe UI", 11F),
+                ForeColor = Color.FromArgb(156, 163, 175),
+                TextAlign = ContentAlignment.MiddleCenter,
+                Visible = false
+            };
+            pnlTopMon.Controls.Add(lblKhongDuLieu);
 
-            tblPhai.Controls.Add(pnlTopMon, 0, 0);
-            tblPhai.Controls.Add(pnlBieuDo, 0, 1);
-            pnlPhai.Controls.Add(tblPhai);
+            var pnlChiTiet = new BorderPanel
+            {
+                Name = "pnlChiTietTop5",
+                Location = new Point(775, 279),
+                Size = new Size(485, 421),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right | AnchorStyles.Bottom,
+                BackColor = Color.White
+            };
+            pnlChiTiet.Controls.Add(TaoNhan("CHI TIẾT TOP 5", "lblTieuDeChiTietTop5",
+                new Point(15, 12), new Size(455, 20)));
+            pnlChiTietTop5 = new TopMonPanel
+            {
+                Name = "pnlDanhSachTop5",
+                Location = new Point(15, 45),
+                Size = new Size(455, 280),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            };
+            pnlChiTiet.Controls.Add(pnlChiTietTop5);
 
-            tblNoiDung.Controls.Add(pnlTrai, 0, 0);
-            tblNoiDung.Controls.Add(pnlPhai, 1, 0);
-            Controls.Add(tblNoiDung);
+            dgvDoanhThuTheoNgay.Visible = false;
+            dgvTopMon.Visible = false;
+            Controls.Add(pnlTopMon);
+            Controls.Add(pnlChiTiet);
         }
 
-        private Panel TaoTheChiSo(string tieuDe, Label lblGiaTri, Color mauChu)
+        private Panel TaoTheChiSo(string ten, string tieuDe, Label lblGiaTri, Color mauChu)
         {
-            Panel card = new Panel
+            var card = new BorderPanel
             {
+                Name = ten,
                 Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(250, 250, 252),
-                Margin = new Padding(6, 0, 6, 0),
-                Padding = new Padding(12, 8, 12, 8)
+                BackColor = Color.White,
+                Margin = Padding.Empty
             };
-
-            card.Paint += (s, e) =>
+            card.Controls.Add(new Panel
             {
-                using (var pen = new Pen(Color.FromArgb(225, 227, 230), 1))
-                {
-                    e.Graphics.DrawRectangle(pen, 0, 0, card.Width - 1, card.Height - 1);
-                }
-                using (var brush = new SolidBrush(mauChu))
-                {
-                    e.Graphics.FillRectangle(brush, 0, 0, 5, card.Height);
-                }
-            };
-
-            Label lblTieuDe = new Label
+                Name = "pnlThanhMau",
+                Location = new Point(0, 0),
+                Size = new Size(4, 100),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Bottom,
+                BackColor = mauChu
+            });
+            card.Controls.Add(new Label
             {
+                Name = "lblNhan" + ten.Substring(3),
                 Text = tieuDe,
-                Dock = DockStyle.Top,
-                Height = 22,
+                Location = new Point(20, 14),
+                Size = new Size(360, 20),
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(100, 100, 100),
-                TextAlign = ContentAlignment.MiddleLeft
-            };
-
+                ForeColor = Color.FromArgb(107, 114, 128),
+                TextAlign = ContentAlignment.MiddleLeft,
+                AutoSize = false
+            });
             lblGiaTri.Text = "0";
-            lblGiaTri.Dock = DockStyle.Fill;
-            lblGiaTri.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
+            lblGiaTri.Location = new Point(20, 39);
+            lblGiaTri.Size = new Size(365, 48);
+            lblGiaTri.Font = new Font("Segoe UI", 22F, FontStyle.Bold);
             lblGiaTri.ForeColor = mauChu;
             lblGiaTri.TextAlign = ContentAlignment.MiddleLeft;
+            lblGiaTri.AutoSize = false;
 
             card.Controls.Add(lblGiaTri);
-            card.Controls.Add(lblTieuDe);
             return card;
+        }
+
+        private static Label TaoNhanBoLoc(string chu, string ten, Point viTri, int rong)
+        {
+            return new Label
+            {
+                Name = ten,
+                Text = chu,
+                Location = viTri,
+                Size = new Size(rong, 16),
+                Font = new Font("Segoe UI", 9F),
+                ForeColor = Color.FromArgb(107, 114, 128),
+                TextAlign = ContentAlignment.MiddleLeft,
+                AutoSize = false
+            };
+        }
+
+        private static Label TaoNhan(string chu, string ten, Point viTri, Size kichThuoc)
+        {
+            return new Label
+            {
+                Name = ten,
+                Text = chu,
+                Location = viTri,
+                Size = kichThuoc,
+                Font = new Font("Segoe UI", 11F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(232, 101, 26),
+                TextAlign = ContentAlignment.MiddleLeft,
+                AutoSize = false
+            };
+        }
+
+        private static void CauHinhNutChinh(Button nut)
+        {
+            nut.FlatStyle = FlatStyle.Flat;
+            nut.FlatAppearance.BorderSize = 0;
+            nut.FlatAppearance.MouseOverBackColor = Color.FromArgb(207, 85, 16);
+            nut.FlatAppearance.MouseDownBackColor = Color.FromArgb(190, 75, 12);
+            nut.UseVisualStyleBackColor = false;
+            nut.BackColor = Color.FromArgb(232, 101, 26);
+            nut.ForeColor = Color.White;
+            nut.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+            nut.Cursor = Cursors.Hand;
+        }
+
+        private static void CauHinhNutLoc(Button nut, string ten, string chu, Point viTri)
+        {
+            nut.Name = ten;
+            nut.Text = chu;
+            nut.Location = viTri;
+            nut.Size = new Size(110, 36);
+            nut.FlatStyle = FlatStyle.Flat;
+            nut.FlatAppearance.BorderSize = 1;
+            nut.FlatAppearance.BorderColor = Color.FromArgb(232, 101, 26);
+            nut.FlatAppearance.MouseOverBackColor = Color.FromArgb(255, 243, 234);
+            nut.FlatAppearance.MouseDownBackColor = Color.FromArgb(255, 243, 234);
+            nut.UseVisualStyleBackColor = false;
+            nut.BackColor = Color.White;
+            nut.ForeColor = Color.FromArgb(232, 101, 26);
+            nut.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+            nut.Cursor = Cursors.Hand;
         }
 
         private void frmThongKe_Load(object sender, EventArgs e)
@@ -469,13 +522,23 @@ namespace QuanLyCuaHangDoAn.GUI
             chartTopMon.Series.Clear();
             chartTopMon.ChartAreas.Clear();
             chartTopMon.Titles.Clear();
+            pnlChiTietTop5.DatDuLieu(dtTop);
+
+            if (dtTop.Rows.Count == 0)
+            {
+                chartTopMon.Visible = false;
+                lblKhongDuLieu.Visible = true;
+                return;
+            }
 
             var chartArea = new ChartArea("AreaTopMon")
             {
                 BackColor = Color.White
             };
-            chartArea.AxisX.MajorGrid.LineColor = Color.FromArgb(235, 235, 235);
-            chartArea.AxisY.MajorGrid.LineColor = Color.FromArgb(235, 235, 235);
+            chartArea.Position = new ElementPosition(0, 0, 100, 100);
+            chartArea.InnerPlotPosition = new ElementPosition(10, 5, 86, 84);
+            chartArea.AxisX.MajorGrid.LineColor = Color.FromArgb(243, 244, 246);
+            chartArea.AxisY.MajorGrid.LineColor = Color.FromArgb(243, 244, 246);
             chartArea.AxisX.LabelStyle.Font = new Font("Segoe UI", 9F);
             chartArea.AxisY.LabelStyle.Font = new Font("Segoe UI", 9F);
             chartArea.AxisX.Interval = 1;
@@ -483,34 +546,117 @@ namespace QuanLyCuaHangDoAn.GUI
             chartArea.AxisX.LabelAutoFitStyle = LabelAutoFitStyles.LabelsAngleStep45;
             chartTopMon.ChartAreas.Add(chartArea);
 
-            var title = new Title("Biểu đồ top 5 món theo số lượng bán", Docking.Top,
-                new Font("Segoe UI", 11F, FontStyle.Bold), Color.FromArgb(80, 80, 80));
-            chartTopMon.Titles.Add(title);
-
             var series = new Series("Số lượng bán")
             {
                 ChartType = SeriesChartType.Column,
-                Color = GiaoDien.MauChinh,
+                Color = Color.FromArgb(232, 101, 26),
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                LabelForeColor = Color.FromArgb(55, 65, 81),
                 IsValueShownAsLabel = true
             };
-
-            if (dtTop.Rows.Count == 0)
+            series["PointWidth"] = "0.65";
+            foreach (DataRow row in dtTop.Rows)
             {
-                title.Text = "Không có dữ liệu bán trong khoảng thời gian đã chọn";
-                title.ForeColor = Color.FromArgb(160, 160, 160);
-            }
-            else
-            {
-                foreach (DataRow row in dtTop.Rows)
-                {
-                    string tenMon = Convert.ToString(row["TenMon"]);
-                    int soLuong = Convert.ToInt32(row["TongSoLuong"]);
-                    series.Points.AddXY(tenMon, soLuong);
-                }
+                string tenMon = Convert.ToString(row["TenMon"]);
+                decimal soLuong = Convert.ToDecimal(row["TongSoLuong"]);
+                series.Points.AddXY(tenMon, soLuong);
             }
 
             chartTopMon.Series.Add(series);
+            chartTopMon.Visible = true;
+            lblKhongDuLieu.Visible = false;
+        }
+
+        private sealed class BorderPanel : Panel
+        {
+            public BorderPanel()
+            {
+                SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer |
+                    ControlStyles.ResizeRedraw, true);
+            }
+
+            protected override void OnPaint(PaintEventArgs e)
+            {
+                base.OnPaint(e);
+                using (Pen vien = new Pen(Color.FromArgb(229, 231, 235)))
+                    e.Graphics.DrawRectangle(vien, 0, 0, Width - 1, Height - 1);
+            }
+        }
+
+        private sealed class TopMonPanel : Panel
+        {
+            private DataTable duLieu;
+
+            public TopMonPanel()
+            {
+                BackColor = Color.White;
+                SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer |
+                    ControlStyles.ResizeRedraw | ControlStyles.UserPaint, true);
+            }
+
+            public void DatDuLieu(DataTable bang)
+            {
+                duLieu = bang;
+                Invalidate();
+            }
+
+            protected override void OnPaint(PaintEventArgs e)
+            {
+                base.OnPaint(e);
+                if (duLieu == null)
+                    return;
+
+                CultureInfo viVn = CultureInfo.GetCultureInfo("vi-VN");
+                using (Font fontTen = new Font("Segoe UI", 10.5F, FontStyle.Bold))
+                using (Font fontSoLuong = new Font("Segoe UI", 10F, FontStyle.Bold))
+                using (Font fontDoanhThu = new Font("Segoe UI", 9F))
+                using (Font fontHang = new Font("Segoe UI", 10F, FontStyle.Bold))
+                using (SolidBrush mauCam = new SolidBrush(Color.FromArgb(232, 101, 26)))
+                using (SolidBrush mauTrang = new SolidBrush(Color.White))
+                using (Pen duongKe = new Pen(Color.FromArgb(243, 244, 246)))
+                {
+                    int soDong = Math.Min(5, duLieu.Rows.Count);
+                    for (int i = 0; i < soDong; i++)
+                    {
+                        DataRow dong = duLieu.Rows[i];
+                        int y = i * 56;
+                        Rectangle huyHieu = new Rectangle(0, y + 12, 32, 32);
+                        e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                        e.Graphics.FillEllipse(mauCam, huyHieu);
+                        TextRenderer.DrawText(e.Graphics, (i + 1).ToString(), fontHang, huyHieu,
+                            Color.White, TextFormatFlags.HorizontalCenter |
+                            TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
+
+                        Rectangle vungTen = new Rectangle(44, y + 5, Math.Max(0, Width - 44 - 185 - 8), 22);
+                        TextRenderer.DrawText(e.Graphics, Convert.ToString(dong["TenMon"]), fontTen,
+                            vungTen, Color.FromArgb(17, 24, 39), TextFormatFlags.Left |
+                            TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine |
+                            TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
+
+                        decimal soLuong = Convert.ToDecimal(dong["TongSoLuong"]);
+                        Rectangle vungSoLuong = new Rectangle(Width - 185, y + 3, 185, 22);
+                        TextRenderer.DrawText(e.Graphics,
+                            soLuong.ToString("#,##0.###", viVn) + " phần",
+                            fontSoLuong, vungSoLuong, Color.FromArgb(17, 24, 39),
+                            TextFormatFlags.Right | TextFormatFlags.VerticalCenter |
+                            TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix);
+
+                        if (duLieu.Columns.Contains("DoanhThu") && dong["DoanhThu"] != DBNull.Value)
+                        {
+                            decimal doanhThu = Convert.ToDecimal(dong["DoanhThu"]);
+                            Rectangle vungDoanhThu = new Rectangle(Width - 185, y + 25, 185, 18);
+                            TextRenderer.DrawText(e.Graphics,
+                                doanhThu.ToString("#,##0", viVn) + " đ",
+                                fontDoanhThu, vungDoanhThu, Color.FromArgb(107, 114, 128),
+                                TextFormatFlags.Right | TextFormatFlags.VerticalCenter |
+                                TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix);
+                        }
+
+                        if (i < soDong - 1)
+                            e.Graphics.DrawLine(duongKe, 0, y + 55, Width, y + 55);
+                    }
+                }
+            }
         }
     }
 }
